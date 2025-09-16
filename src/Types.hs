@@ -11,6 +11,3 @@ data LispVal
   deriving (Show, Eq)
 
 type Env = Map String LispVal
-
-defineVar :: String -> LispVal -> Env -> Env
-defineVar variableName value currentEnv = Map.insert variableName value currentEnv
