@@ -2,7 +2,7 @@ module Types where
 
 data LispVal
   = Atom String
-  | Bool Bool
   | Number Integer
+  | Bool Bool
   | List [LispVal]
   deriving (Show, Eq)
