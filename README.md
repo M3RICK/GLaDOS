@@ -115,7 +115,7 @@ make
 ## Team
 | Name | Role | Contributions |
 |------|------|---------------|
-| Aymeric.L | Developer | [TBD] |
+| Aymeric.L | Developer | Parser Setup |
 | Aurelien.P | Developer | [TBD] |
 | Sven.R | Developer | [TBD] |
 | Tony.F | Developer | [TBD] |
