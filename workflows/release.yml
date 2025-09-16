@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Haskell (GHC + Stack)
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.6.*"
+          enable-stack: true
+          stack-version: "latest"
+
+      - name: Cache Stack (global and local)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.cabal') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-
+
+      - name: Build (release)
+        run: |
+          stack build --no-terminal --system-ghc --test --no-run-tests
+          if [ -f Makefile ]; then
+            make fclean || true
+            make all
+          else
+            echo "No Makefile found, building binary via Stack if available"
+          fi
+          if [ -x ./glados ]; then
+            strip glados || true
+            tar -czf glados-linux-amd64.tgz glados
+          else
+            echo "glados binary not found; skipping tar packaging"
+          fi
+
+      - name: Create GitHub Release
+        if: ${{ hashFiles('glados-linux-amd64.tgz') != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: glados-linux-amd64.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
