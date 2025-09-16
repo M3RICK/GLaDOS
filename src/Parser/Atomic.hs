@@ -24,4 +24,4 @@ parseSymbol::Parser LispVal
 parseSymbol = lexeme $ do
   premier <- letter <|> oneOf "+-*/=<>?!"
   r <- many(letter <|> digit <|> oneOf "+-*/=<>?!")
-  return $ Atom(premier:t)
+  return $ Atom(premier:r)
