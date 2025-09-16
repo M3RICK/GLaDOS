@@ -1,13 +1,6 @@
-resolver: lts-22.6  # Latest LTS as of Sep 2025
+resolver: lts-22.6
 
 packages:
 - .
 
 extra-deps: []
-
-# Optional: specify GHC options globally
-ghc-options:
-  "$everything": -Wall
-
-# Optional: allow newer versions of dependencies
-allow-newer: true

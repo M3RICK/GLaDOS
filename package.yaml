@@ -13,6 +13,9 @@ description: Please see the README on GitHub at <https://github.com/yourusername
 
 dependencies:
 - base >= 4.7 && < 5
+- parsec >= 3.1.0
+- containers
+- mtl
 
 ghc-options:
 - -Wall
@@ -49,4 +52,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - glados
-    - hspec
+    - hspec >= 2.7.0
+    - hspec-discover
+    - QuickCheck >= 2.14.0
