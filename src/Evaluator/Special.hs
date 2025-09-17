@@ -12,7 +12,7 @@ evalDefine::(Env -> LispVal -> Either String LispVal)
 -- Case 1: variable definition
 evalDefine eval env [Atom var, expr] =
     case eval env expr of
-        Right val -> Right (Function [] (Atom var) (defineVar var val env))
+        Right val -> Right val
         Left err  -> Left err
 
 evalDefine _ _ other =
