@@ -1,4 +1,4 @@
-module Parser.Core(parseExpr, readExpr) where
+module Parser.Core(parseExpr, readExpr, readProgram) where
 
 import Text.Parsec
 import Text.Parsec.String(Parser)
@@ -16,7 +16,12 @@ parseExpr = choice
   , parseList parseExpr
   ]
 
--- Entry point
+-- Entry point (singular)
 readExpr::String -> Either ParseError LispVal
 readExpr input =
   parse (whitespace *> parseExpr <* eof) "<stdin>" input
+
+-- Entry point (multiple)
+readProgram :: String -> Either ParseError [LispVal]
+readProgram input =
+  parse (whitespace *> many parseExpr <* eof) "<stdin>" input
