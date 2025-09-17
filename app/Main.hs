@@ -16,16 +16,19 @@ import qualified Parser.Helpers as Helpers
 -- main = do
 --     args <- getArgs
 --     input <- case length args of
---         0 -> putStrLn "damn0"
---         2 -> putStrLn "what2"
---         3 -> putStrLn "hunh3"
+--         0 -> getContents
+--         1 -> readFile (head args)
+--         _ -> putStrLn "Usage error" >> exitWith (ExitFailure 84) >> return "" --need to return this empty string because expecting a IO string cant simply just exit
+--     Core.readExpr
+
 
 main :: IO ()
 main = do
-    args <- getArgs
-    case length args of
-        0 -> putStrLn "damn0"
-        1 -> putStrLn "wow1"
-        2 -> putStrLn "what2"
-        3 -> putStrLn "hunh3"
-        _ -> putStrLn "unhandled number of arguments"
+  args <- getArgs
+  input <- case length args of
+    0 -> getContents
+    1 -> readFile (head args)
+    _ -> putStrLn "Usage error" >> exitWith (ExitFailure 84) >> return ""
+  case Core.readProgram input of
+    Left parseError -> putStrLn (show parseError) >> exitWith (ExitFailure 84)
+    Right expressions -> mapM_ (putStrLn . show) expressions  -- Print each parsed expression
