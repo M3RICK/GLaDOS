@@ -4,7 +4,7 @@
 -- import System.Exit
 -- import System.Environment (getArgs)
 -- import Types
--- import Environment  
+-- import Environment
 -- import Builtins
 -- import qualified Parser.Core as Core
 -- import qualified Parser.Atomic as Atomic
@@ -54,33 +54,25 @@ main = do
   input <- case length args of
     0 -> getContents
     1 -> readFile (head args)
-    _ -> putStrLn "Usage error" >> exitWith (ExitFailure 84) >> return ""
-  
+    _ -> putStrLn "Usage: ./glados [file]" >> exitWith (ExitFailure 84) >> return ""
+
   case Core.readProgram input of
     Left parseError -> do
       putStrLn $ "Parse error: " ++ show parseError
       exitWith (ExitFailure 84)
     Right expressions -> do
-      result <- processExpressions initialEnv expressions
+      result <- runProgram initialEnv expressions
       case result of
         Left err -> putStrLn err >> exitWith (ExitFailure 84)
-        Right (finalEnv, finalValue) -> print finalValue
+        Right (_, finalValue) -> print finalValue
 
--- Process expressions sequentially, maintaining environment state
-processExpressions :: Env -> [LispVal] -> IO (Either String (Env, LispVal))
-processExpressions env [] = return $ Right (env, Bool True)
-processExpressions env [expr] = do
+-- Process a full program (sequence of expressions), threading the environment
+runProgram :: Env -> [LispVal] -> IO (Either String (Env, LispVal))
+runProgram env [] = return $ Right (env, Bool True)
+runProgram env (expr:rest) =
   case Evaluator.eval env expr of
     Left err -> return $ Left err
-    Right val -> return $ Right (env, val)
-processExpressions env (expr:rest) = do
-  case Evaluator.eval env expr of
-    Left err -> return $ Left err
-    Right val -> do
-      -- For define expressions, we need to extract the updated environment
-      -- This is a workaround for the current evaluator structure
-      let updatedEnv = case expr of
-            List (Atom "define" : Atom var : _) ->
-              defineVar var val env  -- Use the 'val' we already computed
-            _ -> env
-      processExpressions updatedEnv rest
+    Right (env', val) ->
+      if null rest
+        then return $ Right (env', val)   -- last expression: return final result
+        else runProgram env' rest         -- otherwise, keep going

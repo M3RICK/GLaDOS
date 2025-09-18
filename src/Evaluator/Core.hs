@@ -1,31 +1,38 @@
-module Evaluator.Core(eval) where
+module Evaluator.Core (eval) where
 
 import Types
 import Environment
 import Evaluator.Special
 import Evaluator.Apply
 
--- The main man
-eval::Env -> LispVal -> Either String LispVal
+eval::Env -> LispVal -> Either String (Env, LispVal)
 
-eval _ val@(Number _) = Right val
-eval _ val@(Bool _)   = Right val
+-- helper: eval list of args while threading env
+evalArgs :: Env -> [LispVal] -> Either String (Env, [LispVal])
+evalArgs env [] = Right (env, [])
+evalArgs env (x:xs) = do
+    (env1, val)     <- eval env x
+    (env2, rest)    <- evalArgs env1 xs
+    Right (env2, val:rest)
 
--- Case 1: (atoms)
+-- Base cases
+eval env val@(Number _) = Right (env, val)
+eval env val@(Bool _)   = Right (env, val)
 eval env (Atom name) =
-    lookupVar name env
+    case lookupVar name env of
+        Right v -> Right (env, v)
+        Left e  -> Left e
 
--- Case 2: Special
+-- Special forms
 eval env (List (Atom "define" : rest)) = evalDefine eval env rest
 eval env (List (Atom "if"     : rest)) = evalIf eval env rest
 eval env (List (Atom "lambda" : rest)) = evalLambda env rest
 
--- Case 3: Function calls
+-- Function calls
 eval env (List (fnExpr : argExprs)) = do
-    function <- eval env fnExpr
-    args <- mapM (eval env) argExprs
-    apply eval function args
+    (env1, fn)   <- eval env fnExpr
+    (env2, args) <- evalArgs env1 argExprs
+    result       <- apply eval fn args
+    Right (env2, result)
 
--- Anything else is just wrong
-eval _ bad =
-    Left $ "*** ERROR: cannot evaluate " ++ show bad
+eval _ bad = Left $ "*** ERROR: cannot evaluate " ++ show bad
