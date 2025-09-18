@@ -1,4 +1,4 @@
-module Environment where
+module Environment (emptyEnv, defineVar, lookupVar) where
 import qualified Data.Map as Map
 import Types
 

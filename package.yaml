@@ -54,4 +54,5 @@ tests:
     - glados
     - hspec >= 2.7.0
     - hspec-discover
+    - process
     - QuickCheck >= 2.14.0

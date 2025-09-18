@@ -1,5 +1,4 @@
-module Parser.Helpers where
-
+module Parser.Helpers (whitespace, lexeme, parens) where
 import Text.Parsec
 import Text.Parsec.String(Parser)
 
