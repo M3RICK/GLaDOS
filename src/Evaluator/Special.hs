@@ -8,19 +8,11 @@ import Evaluator.Helpers
 evalDefine::(Env -> LispVal -> Either String (Env, LispVal))
            -> Env -> [LispVal] -> Either String (Env, LispVal)
 
-<<<<<<< HEAD
--- Case 1: variable definition
-evalDefine eval env [Atom var, expr] =
-    case eval env expr of
-        Right val -> Right val
-        Left err  -> Left err
-=======
 -- Case 1: variable define
 evalDefine eval env [Atom var, expr] = do
     (env1, val) <- eval env expr
     let newEnv = defineVar var val env1
     Right (newEnv, val)
->>>>>>> dev_evaluator
 
 -- Case 2: function definition
 evalDefine _eval env [List (Atom fname : params), body] =
