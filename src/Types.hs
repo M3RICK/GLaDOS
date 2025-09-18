@@ -1,5 +1,4 @@
-module Types where
-
+module Types (LispVal(..), Env) where
 import qualified Data.Map as Map
 
 data LispVal
@@ -10,9 +9,10 @@ data LispVal
   | Function [String] LispVal Env
   | Builtin ([LispVal] -> Either String LispVal)
 
-
-
 type Env = Map.Map String LispVal
+
+
+
 
 -- Manual Show instance
 instance Show LispVal where
@@ -30,4 +30,4 @@ instance Eq LispVal where
   (Bool a) == (Bool b) = a == b
   (Number a) == (Number b) = a == b
   (List a) == (List b) = a == b
-  _ == _ = False  -- Functions and builtins are never equal
+  _ == _ = False

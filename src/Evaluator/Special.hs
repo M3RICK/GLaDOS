@@ -15,7 +15,7 @@ evalDefine eval env [Atom var, expr] = do
     Right (newEnv, val)
 
 -- Case 2: function definition
-evalDefine eval env [List (Atom fname : params), body] =
+evalDefine _eval env [List (Atom fname : params), body] =
     let paramNames = [ name | Atom name <- params ]
         recEnv = defineVar fname fn env
         fn = Function paramNames body recEnv

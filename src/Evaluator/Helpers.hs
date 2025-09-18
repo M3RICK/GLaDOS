@@ -1,5 +1,4 @@
-module Evaluator.Helpers where
-
+module Evaluator.Helpers (isTrue, liftError) where
 import Types
 
 -- A voir si on ajoute plus tard d autres cas vrai ou faux
