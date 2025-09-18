@@ -16,10 +16,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup Haskell (GHC + Stack)
+      - name: Setup Haskell (Stack only)
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.6.*"
           enable-stack: true
           stack-version: "latest"
 
@@ -29,24 +28,35 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.cabal') }}
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml*') }}-${{ hashFiles('**/*.cabal') }}
           restore-keys: |
             ${{ runner.os }}-stack-
 
+      - name: Prepare Stack (install matching GHC)
+        run: stack setup
+
       - name: Build (release)
         run: |
-          stack build --no-terminal --system-ghc --test --no-run-tests
+          # Build and run tests compilation only (no execution)
+          stack build --no-terminal --test --no-run-tests
+
+          # Produce the executable
           if [ -f Makefile ]; then
             make fclean || true
             make all
           else
-            echo "No Makefile found, building binary via Stack if available"
+            stack install --local-bin-path . --copy-bins
           fi
-          if [ -x ./glados ]; then
+
+          # Normalize name to 'glados' if the package adds a suffix
+          test -f glados || mv glados-* glados 2>/dev/null || true
+
+          # Package if we have a binary
+          if [ -f glados ]; then
             strip glados || true
             tar -czf glados-linux-amd64.tgz glados
           else
-            echo "glados binary not found; skipping tar packaging"
+            echo "No glados binary found; skipping tar packaging"
           fi
 
       - name: Create GitHub Release

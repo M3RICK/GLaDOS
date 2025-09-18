@@ -14,10 +14,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup Haskell (GHC + Stack)
+      # Use Stack only; let Stack install the exact GHC it needs (most reliable)
+      - name: Setup Haskell (Stack only)
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.6.*"
           enable-stack: true
           stack-version: "latest"
 
@@ -27,28 +27,34 @@ jobs:
           path: |
             ~/.stack
             .stack-work
-          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml') }}-${{ hashFiles('package.yaml') }}-${{ hashFiles('**/*.cabal') }}
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml*') }}-${{ hashFiles('**/*.cabal') }}
           restore-keys: |
             ${{ runner.os }}-stack-
 
+      - name: Prepare Stack (install matching GHC)
+        run: stack setup
+
       - name: Build
-        run: stack build --no-terminal --system-ghc
+        run: stack build --no-terminal
 
       - name: Test (with coverage)
-        run: stack test --no-terminal --system-ghc --coverage
+        run: stack test --no-terminal --coverage
 
-      - name: Build executable via Makefile (glados)
+      - name: Build executable (Makefile or Stack)
         run: |
           if [ -f Makefile ]; then
             make all
           else
-            echo "No Makefile found, skipping Make build"
+            # If no Makefile target, install the executable to the repo root
+            stack install --local-bin-path . --copy-bins
           fi
+          # Normalize binary name to 'glados' if needed (best-effort)
+          test -f glados || mv glados-* glados 2>/dev/null || true
 
       - name: Smoke check
         run: |
           if [ -x ./glados ]; then
-            ./glados --version || echo "glados built, --version not implemented"
+            ./glados --version || echo "glados built (no --version output)"
           else
             echo "glados binary not found, skipping smoke check"
           fi
