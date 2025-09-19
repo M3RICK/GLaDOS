@@ -1,0 +1,74 @@
+cabal-version:      2.4
+name:               glados
+version:            0.1.0.0
+build-type:         Simple
+
+-- Info du projet
+synopsis:           GLaDOS project
+author:             Your Name
+maintainer:         your.email@example.com
+license:            BSD-3-Clause
+extra-source-files: README.md
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Lib
+  other-modules:       Paths_glados
+  build-depends:
+      base >= 4.7 && < 5
+    , containers
+    , mtl
+    , parsec >= 3.1.0
+  default-language:    Haskell2010
+  ghc-options: -Wall
+
+executable glados-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  other-modules:       Paths_glados
+  build-depends:
+      base >= 4.7 && < 5
+    , glados
+    , containers
+    , mtl
+    , parsec >= 3.1.0
+  default-language:    Haskell2010
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+
+executable glc
+  hs-source-dirs:      compilator/app, compilator/src
+  main-is:             Main.hs
+  other-modules:
+      Compilator.Bytecode.Disasm
+      Compilator.Bytecode.Encode
+      Compilator.Bytecode.Opcode
+      Compilator.Compiler.Codegen
+      Compilator.Frontend.AST
+      Compilator.Frontend.Parser
+      Paths_glados
+  build-depends:
+      base >= 4.14 && < 5
+    , megaparsec >= 9
+    , parser-combinators >= 1.3
+    , bytestring
+    , binary
+    , containers
+  default-language:    Haskell2010
+  ghc-options: -Wall
+
+test-suite glados-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      tests
+  main-is:             Spec.hs
+  other-modules:       Paths_glados
+  build-depends:
+      base >= 4.7 && < 5
+    , QuickCheck >= 2.14.0
+    , containers
+    , glados
+    , hspec >= 2.7.0
+    , hspec-discover
+    , mtl
+    , parsec >= 3.1.0
+  default-language:    Haskell2010
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N

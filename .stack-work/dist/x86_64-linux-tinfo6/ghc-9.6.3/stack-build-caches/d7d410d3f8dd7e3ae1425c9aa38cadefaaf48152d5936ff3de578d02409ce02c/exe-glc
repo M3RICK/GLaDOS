@@ -1,0 +1,26 @@
+? /home/prestige/.stack/programs/x86_64-linux/ghc-tinfo6-9.6.3/lib/ghc-9.6.3/lib/x86_64-linux-ghc-9.6.3/rts-1.0.2/include/ghcversion.h
+: hash: 9ac4cd6dcf20b31fc6e9eefbda1d924d33786bc197a79b0e6947ed7129581019
+? /home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/.stack-work/dist/x86_64-linux-tinfo6/ghc-9.6.3/build/glc/autogen/Paths_glados.hs
+: hash: 0f229523c4b359fe8de625f40f62ab552e985fdec7581a031cf6072421afdad7
+? /home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/.stack-work/dist/x86_64-linux-tinfo6/ghc-9.6.3/build/glc/autogen/cabal_macros.h
+: hash: 2883db9b5ab221a8683c9fb1a54befd8e39d0a0df592740676e7f92517a9932c
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/README.md:
+  hash: 2a17a0c5a46b7c715076dad2c787ea09dc0eb55d376155950918bd414058b04d
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/app/Main.hs:
+  hash: 5a420be05dffdccc5aaf60e3b423191320c0e69f7962d48f570f930f5db066f3
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Bytecode/Disasm.hs:
+  hash: 445842078040b286fe4535d661d6fa1e58ec82041967442b62c394236d5ce6b2
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Bytecode/Encode.hs:
+  hash: 17aa9fef38dfe34d73ca29a9e2ba799a6dadfa1e5876eb7193b91e021485ac5d
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Bytecode/Opcode.hs:
+  hash: 8e77843ae09762fa812fbc1fba804458470f185b574c5adfdc74ef6056619bdd
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Compiler/Codegen.hs:
+  hash: 607a755a4109d20547a8874945aed09d1cd98eb50a2b0b22f07ac7d4bf133063
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Frontend/AST.hs:
+  hash: 3f01de9f3a9e63b53d2ef536117deed9ba999c1d2d82f7b68b1e217cc92932ef
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/compilator/src/Compilator/Frontend/Parser.hs:
+  hash: af24fa21bddc046ba39975dcc4dcb693a8508733cb490ac306b8f3cb087262bb
+/home/prestige/delivery/Semester5/B-FUN/G-FUN-500-TLS-5-1-glados-2/glados.cabal:
+  hash: 0f20c701077c8ef61ee3dca348af74e13cd292b5612ceeae15824312c30b7840
+/usr/include/stdc-predef.h:
+  hash: 8db4f65e62cade8ae4d9b77960ee6aee093255acc1b637e3fb37d79179733b15
