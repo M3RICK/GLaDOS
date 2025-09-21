@@ -115,11 +115,11 @@ make
 ## Team
 | Name | Role | Contributions |
 |------|------|---------------|
-| Aymeric.L | Developer | Parser and Evaluator engine creation |
+| Aymeric.L | Developer | Parser Setup |
 | Aurelien.P | Developer | [TBD] |
 | Sven.R | Developer | [TBD] |
 | Tony.F | Developer | [TBD] |
-| Thierry.B | Developer | Build, Environment, Builtin and app structure |
+| Thierry.B | Developer | Build setup and main Project structure |
 
 ## Build & Test Commands
 ```bash
