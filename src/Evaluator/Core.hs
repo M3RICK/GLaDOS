@@ -25,7 +25,7 @@ eval env (Atom name) =
 
 -- Special forms
 eval env (List (Atom "define" : rest)) = evalDefine eval env rest
-eval env (List (Atom "if"     : rest)) = evalIf eval env rest
+eval env (List (Atom "if" : rest)) = evalIf eval env rest
 eval env (List (Atom "lambda" : rest)) = evalLambda env rest
 
 -- Function calls

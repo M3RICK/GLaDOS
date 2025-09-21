@@ -15,10 +15,13 @@ initialEnv = Map.fromList
   ]
 
 addFunc :: [LispVal] -> Either String LispVal
-addFunc [Number x, Number y] = Right (Number (x + y))
-addFunc [Number _, _] = Left "Type error: expected Number"
-addFunc [Number _] = Left "Addition requires 2 arguments, got 1"
-addFunc _ = Left "Addition requires exactly 2 arguments"
+addFunc [] = Left "Addition requires at least 1 argument"
+addFunc [Number x] = Right (Number x)
+addFunc (Number x : rest) = case addFunc rest of
+  Right (Number y) -> Right (Number (x + y))
+  Right _ -> Left "Internal error: expected Number"
+  Left err -> Left err
+addFunc _ = Left "Type error: expected Number"
 
 subFunc :: [LispVal] -> Either String LispVal
 subFunc [Number x, Number y] = Right (Number (x - y))
@@ -27,10 +30,13 @@ subFunc [Number _] = Left "Subtraction requires 2 arguments, got 1"
 subFunc _ = Left "Subtraction requires exactly 2 arguments"
 
 mulFunc :: [LispVal] -> Either String LispVal
-mulFunc [Number x, Number y] = Right (Number (x * y))
-mulFunc [Number _, _] = Left "Type error: expected Number"
-mulFunc [Number _] = Left "Multiplication requires 2 arguments, got 1"
-mulFunc _ = Left "Multiplication requires exactly 2 arguments"
+mulFunc [] = Left "Multiplication requires at least 1 argument" 
+mulFunc [Number x] = Right (Number x)
+mulFunc (Number x : rest) = case mulFunc rest of
+  Right (Number y) -> Right (Number (x * y))
+  Right _ -> Left "Internal error: expected Number"
+  Left err -> Left err
+mulFunc _ = Left "Type error: expected Number"
 
 divFunc :: [LispVal] -> Either String LispVal
 divFunc [Number _, Number 0] = Left "Division by 0 is illegal"

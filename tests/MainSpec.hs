@@ -5,15 +5,17 @@ import System.Process
 import System.Exit
 import Control.Exception (catch, IOException)
 
+-- Helper function to run glados with a file argument
 runGladosFile :: String -> IO (Either String String)
 runGladosFile filename = do
   result <- catch 
-    (readProcessWithExitCode "./glados" ["scm/" ++ filename] "")
+    (readProcessWithExitCode "./glados" ["tests/scm/" ++ filename] "")
     (\e -> return (ExitFailure 84, "", show (e :: IOException)))
   case result of
     (ExitSuccess, notStdout, _) -> return $ Right (trim notStdout)
     (ExitFailure _, _, notStderr) -> return $ Left notStderr
 
+-- Helper function to run glados with stdin input
 runGladosStdin :: String -> IO (Either String String)
 runGladosStdin input = do
   result <- catch 
@@ -23,72 +25,113 @@ runGladosStdin input = do
     (ExitSuccess, notStdout, _) -> return $ Right (trim notStdout)
     (ExitFailure _, _, notStderr) -> return $ Left notStderr
     
+-- Helper to trim whitespace
 trim :: String -> String
 trim = reverse . dropWhile (`elem` " \n\r\t") . reverse . dropWhile (`elem` " \n\r\t")
 
 spec :: Spec
 spec = do
-  describe "GLaDOS Main Executable" $ do
+  describe "GLaDOS LISP Interpreter - Part 1 Features" $ do
     
-    describe "File Input Tests" $ do
-      it "should handle arithmetic via file" $ do
-        result <- runGladosFile "Arithmetic.scm"
-        result `shouldBe` Right "2"
+    describe "64-bit Integer Types" $ do
+      it "should handle large positive integers via file" $ do
+        result <- runGladosFile "large_integers.scm"
+        result `shouldBe` Right "9223372036854775806"  -- Max 64-bit - 1
+      
+      it "should handle large negative integers via stdin" $ do
+        result <- runGladosStdin "-9223372036854775807"
+        result `shouldBe` Right "-9223372036854775807"
 
-      it "should handle booleans via file" $ do
-        result <- runGladosFile "Boolean.scm"
-        result `shouldBe` Right "#f"
+    describe "Boolean Values (#t/#f)" $ do
+      it "should handle boolean literals via file" $ do
+        result <- runGladosFile "booleans.scm" 
+        result `shouldBe` Right "#t"
+        
+      it "should handle boolean comparison via stdin" $ do
+        result <- runGladosStdin "(eq? #t #t)\n(eq? #f #f)"
+        result `shouldBe` Right "#t"
 
-      it "should handle conditionals via file" $ do
-        result <- runGladosFile "Conditionals.scm"
-        result `shouldBe` Right "42"
-
-      it "should handle variables via file" $ do
-        result <- runGladosFile "Multiple.scm"
+    describe "Variable Bindings (define)" $ do
+      it "should handle simple variable definition via file" $ do
+        result <- runGladosFile "simple_define.scm"
+        result `shouldBe` Right "100"
+        
+      it "should handle multiple variable definitions via stdin" $ do
+        result <- runGladosStdin "(define x 10)\n(define y 20)\n(+ x y)"
         result `shouldBe` Right "30"
 
-      it "should handle nested expressions via file" $ do
-        result <- runGladosFile "Nested.scm"
-        result `shouldBe` Right "28"
-
-      it "should handle simple variable usage via file" $ do
-        result <- runGladosFile "test.scm"
-        result `shouldBe` Right "43"
-
-      it "should handle function definitions via file" $ do
-        result <- runGladosFile "examplePDF.scm"
-        result `shouldBe` Right "3628800"
-
-    describe "Stdin Input Tests" $ do
-      it "should handle arithmetic via stdin" $ do
-        result <- runGladosStdin "(+ 10 5)\n(- 20 8)\n(* 6 7)\n(div 15 3)\n(mod 17 5)"
-        result `shouldBe` Right "2"
-
-      it "should handle booleans via stdin" $ do
-        result <- runGladosStdin "(eq? 5 5)\n(eq? 3 7)\n(< 2 8)\n(< 10 5)"
-        result `shouldBe` Right "#f"
-
-      it "should handle conditionals via stdin" $ do
-        result <- runGladosStdin "(if #t 100 200)\n(if #f 100 200)\n(if (< 3 5) 42 0)"
+    describe "Lambda Functions" $ do
+      it "should handle lambda definition and call via file" $ do
+        result <- runGladosFile "lambda_test.scm"
+        result `shouldBe` Right "15"
+        
+      it "should handle anonymous lambda call via stdin" $ do
+        result <- runGladosStdin "((lambda (x y) (* x y)) 6 7)"
         result `shouldBe` Right "42"
 
-      it "should handle variables via stdin" $ do
-        result <- runGladosStdin "(define a 10)\n(define b 20)\n(+ a b)"
-        result `shouldBe` Right "30"
+    describe "Named Function Definitions" $ do
+      it "should handle named function definition via file" $ do
+        result <- runGladosFile "named_function.scm"
+        result `shouldBe` Right "25"
+        
+      it "should handle function with multiple parameters via stdin" $ do
+        result <- runGladosStdin "(define (multiply a b c) (* a (* b c)))\n(multiply 2 3 4)"
+        result `shouldBe` Right "24"
 
-      it "should handle nested expressions via stdin" $ do
-        result <- runGladosStdin "(define x 5)\n(* (+ x 2) (- x 1))"
-        result `shouldBe` Right "28"
+    describe "Recursion Support" $ do
+      it "should handle recursive factorial via file" $ do
+        result <- runGladosFile "factorial.scm"
+        result `shouldBe` Right "120"  -- factorial(5)
+        
+      it "should handle recursive fibonacci via stdin" $ do
+        result <- runGladosStdin "(define (fib n)\n  (if (< n 2)\n      n\n      (+ (fib (- n 1)) (fib (- n 2)))))\n(fib 7)"
+        result `shouldBe` Right "13"  -- 7th fibonacci number
 
-      it "should handle simple operations via stdin" $ do
-        result <- runGladosStdin "(define x 42)\n(+ x 1)"
-        result `shouldBe` Right "43"
+    describe "Arithmetic Built-ins" $ do
+      it "should handle all arithmetic operations via file" $ do
+        result <- runGladosFile "all_arithmetic.scm"
+        result `shouldBe` Right "2"  -- final mod operation result
+        
+      it "should handle complex arithmetic expression via stdin" $ do
+        result <- runGladosStdin "(+ (* 3 4) (div 20 5) (mod 17 6))"
+        result `shouldBe` Right "21"  -- 12 + 4 + 5
 
-    describe "Error Handling" $ do
-      it "should exit with code 84 on parse errors (file)" $ do
-        (exitCode, _, _) <- readProcessWithExitCode "./glados" ["nonexistent.scm"] ""
+    describe "Predicate Built-ins" $ do
+      it "should handle equality and comparison via file" $ do
+        result <- runGladosFile "predicates.scm"
+        result `shouldBe` Right "#t"
+        
+      it "should handle complex comparisons via stdin" $ do
+        result <- runGladosStdin "(< (+ 2 3) (* 2 4))"
+        result `shouldBe` Right "#t"  -- 5 < 8
+
+    describe "Function Calls and Application" $ do
+      it "should handle nested function calls via file" $ do
+        result <- runGladosFile "nested_calls.scm"
+        result `shouldBe` Right "16"
+        
+      it "should handle function composition via stdin" $ do
+        result <- runGladosStdin "(define (square x) (* x x))\n(define (double x) (+ x x))\n(square (double 3))"
+        result `shouldBe` Right "36"  -- square(double(3)) = square(6) = 36
+
+    describe "Error Handling and Exit Codes" $ do
+      it "should handle unbound variables with exit 84" $ do
+        (exitCode, _, _) <- readProcessWithExitCode "./glados" [] "undefined_variable"
+        exitCode `shouldBe` ExitFailure 84
+        
+      it "should handle malformed syntax with exit 84" $ do
+        (exitCode, _, _) <- readProcessWithExitCode "./glados" [] "(+ 1 2"
+        exitCode `shouldBe` ExitFailure 84
+        
+      it "should handle division by zero with exit 84" $ do
+        (exitCode, _, _) <- readProcessWithExitCode "./glados" [] "(div 5 0)"
         exitCode `shouldBe` ExitFailure 84
 
-      it "should exit with code 84 on parse errors (stdin)" $ do
-        (exitCode, _, _) <- readProcessWithExitCode "./glados" [] "(invalid syntax"
-        exitCode `shouldBe` ExitFailure 84
+    describe "S-Expression Parsing" $ do
+      it "should handle deeply nested expressions via file" $ do
+        result <- runGladosFile "nested_sexpr.scm"
+        result `shouldBe` Right "15"
+        
+      it "should handle whitespace variations via stdin" $ do
+        result <- runGladosStdin "(+    1\n\n    2    3\t\t4)"
+        result `shouldBe` Right "10"
