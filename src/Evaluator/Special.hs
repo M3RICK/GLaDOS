@@ -39,7 +39,7 @@ evalIf _ _ other =
 
 
 -- (lambda (args...) body)
-evalLambda::Env -> [LispVal] -> Either String (Env, LispVal)
+evalLambda :: Env -> [LispVal] -> Either String (Env, LispVal)
 evalLambda env [List params, body] =
     let paramNames = [ name | Atom name <- params ]
         fn = Function paramNames body env
