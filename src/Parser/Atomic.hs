@@ -5,7 +5,7 @@ import Text.Parsec.String(Parser)
 import Types
 import Parser.Helpers(lexeme)
 
-parseNumber::Parser LispVal
+parseNumber :: Parser LispVal
 parseNumber = lexeme $ do
   sign <- optionMaybe (oneOf "+-")
   digits <- many1 digit
@@ -14,13 +14,13 @@ parseNumber = lexeme $ do
                      Just '-' -> -n
                      _        -> n)
 
-parseBool::Parser LispVal
+parseBool :: Parser LispVal
 parseBool = lexeme $ do
   _ <- char '#'
   b <- oneOf "tf"
   return $ Bool(b == 't')
 
-parseSymbol::Parser LispVal
+parseSymbol :: Parser LispVal
 parseSymbol = lexeme $ do
   premier <- letter <|> oneOf "+-*/=<>?!"
   r <- many(letter <|> digit <|> oneOf "+-*/=<>?!")

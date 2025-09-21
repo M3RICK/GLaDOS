@@ -8,7 +8,7 @@ import Parser.Atomic(parseNumber, parseBool, parseSymbol)
 import Parser.Compound(parseList)
 
 -- Dispatcher
-parseExpr::Parser LispVal
+parseExpr :: Parser LispVal
 parseExpr = choice
   [ try parseNumber
   , try parseBool
@@ -17,7 +17,7 @@ parseExpr = choice
   ]
 
 -- Entry point (singular)
-readExpr::String -> Either ParseError LispVal
+readExpr :: String -> Either ParseError LispVal
 readExpr input =
   parse (whitespace *> parseExpr <* eof) "<stdin>" input
 
