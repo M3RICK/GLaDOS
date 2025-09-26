@@ -1,8 +1,12 @@
+<div align="center">
+
 # GLaDOS
 
 <img src="docs/assets/HolyC_Logo.png" alt="HolyC Logo" width="150"/>
 
 **HolyC but Holyer — for the true zealots, the apostles of code.**
+
+</div>
 
 A functional programming language interpreter built in Haskell. This project implements a complete language pipeline from parsing to execution, starting with a LISP-like syntax and evolving into a custom language with advanced features.
 
