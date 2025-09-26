@@ -1,9 +1,9 @@
 #!/bin/bash
 
 branches=(
-  dev
-  dev_evaluation_engine
-  dev_evaluator
+  dev_CI/CD
+  dev_compilator
+  dev_parsing
   dev_stdin
 )
 
