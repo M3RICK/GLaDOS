@@ -14,7 +14,7 @@ A functional programming language interpreter built in Haskell. This project imp
 - **Language**: Haskell (GHC 9.6.3)
 - **Build System**: Stack (LTS 22.6)
 - **Testing Framework**: Hspec
-- **Parser Library**: Parsec
+- **Parser Library**: Megaparsec
 - **Resolver**: lts-22.6
 
 ## Prerequisites
