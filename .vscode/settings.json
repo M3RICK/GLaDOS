@@ -1,0 +1,12 @@
+{
+    "haskell.manageHLS": "GHCup",
+    "haskell.serverEnvironment": {
+        "PATH": "${workspaceFolder}/.vscode-tools:${env:PATH}"
+    },
+    "haskell.serverExecutablePath": "",
+    "haskell.toolchain": {
+        "hls": "",
+        "cabal": "",
+        "stack": "stack"
+    }
+}
