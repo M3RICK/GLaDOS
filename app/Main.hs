@@ -8,7 +8,7 @@ module Main (main) where
 import Parser (Expression(..), ArithOp(..), BoolOp(..))
 import TypeChecker (typeCheckExpression, emptyEnv)
 import Compiler (compileAndRun, compileExpression)
-import VirtualMachine (runVM, Instruction(..), Value(..))
+import VirtualMachine (runVM, Instruction(..))
 
 -- | Pipeline complet : Parse -> TypeCheck -> Compile -> Execute
 fullDemo :: String -> Expression -> IO ()
