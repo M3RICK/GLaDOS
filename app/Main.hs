@@ -1,11 +1,20 @@
+
+-- Projet GLaDOS - Main executable
+-- Auteur : Copilot (Epitech style)
+-- Description : Point d'entrée principal, démonstration du parser
+
 module Main (main) where
+
+import Parser (AST(..), parseProgram)
+
 
 main :: IO ()
 main = do
-    putStrLn "spent 22 grand on a hooker, brought her home and that bitch a dick"
-    putStrLn "told her get out my house when she walked out my house"
-    putStrLn "i had noticed her booty was thick"
-    putStrLn "i was like naw nevermind you good"
-    putStrLn "i'm a lumberjack i can tolerate wood"
-    putStrLn "layed down then we played us some fortnite"
-    putStrLn "then we stripped down and we had a swordfight"
+        putStrLn "Parser demo:"
+        let testInputs = ["42", "true", "false", "abc"]
+        mapM_ printParse testInputs
+    where
+        printParse s =
+            case parseProgram s of
+                Left err -> putStrLn $ s ++ " => Parse failed: " ++ err
+                Right ast -> putStrLn $ s ++ " => Parse succeeded: " ++ show ast
