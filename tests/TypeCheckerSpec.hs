@@ -3,9 +3,9 @@ module TypeCheckerSpec (spec) where
 import Test.Hspec
 import TypeChecker (
     TypeError(..), TypeEnv,
-    typeCheck, typeCheckExpression, typeCheckStatement,
+    typeCheckExpression, typeCheckStatement,
     emptyEnv, addVar, lookupVar
-  )
+    )
 import Parser (Type(..), Expression(..), Statement(..), ArithOp(..), BoolOp(..))
 
 spec :: Spec
