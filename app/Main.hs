@@ -5,7 +5,7 @@
 
 module Main (main) where
 
-import Parser (AST(..), parseProgram)
+import Parser (parseProgram)
 
 
 main :: IO ()

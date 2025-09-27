@@ -9,7 +9,7 @@ module TypeChecker (
     emptyEnv, addVar, lookupVar
 ) where
 
-import Parser (Type(..), Expression(..), Statement(..), Function(..), ArithOp(..), BoolOp(..))
+import Parser (Type(..), Expression(..), Statement(..), Function(..), BoolOp(..))
 import qualified Data.Map as Map
 
 -- | Erreurs de type
@@ -55,7 +55,7 @@ typeCheckExpression env (EArith left op right) = do
         (TInt, TInt) -> Right TInt
         (TInt, other) -> Left (TypeMismatch TInt other ("arithmetic " ++ show op))
         (other, TInt) -> Left (TypeMismatch TInt other ("arithmetic " ++ show op))
-        (other1, other2) -> Left (TypeMismatch TInt other1 ("arithmetic " ++ show op))
+        (other1, _) -> Left (TypeMismatch TInt other1 ("arithmetic " ++ show op))
 
 typeCheckExpression env (EBoolOp left op right) = do
     leftType <- typeCheckExpression env left
@@ -141,7 +141,7 @@ typeCheckStatements env (stmt:stmts) = do
 
 -- | Type checking pour une fonction
 typeCheckFunction :: TypeEnv -> Function -> Either TypeError TypeEnv
-typeCheckFunction env (Function retType name params body) = do
+typeCheckFunction env (Function _retType _name params body) = do
     -- Ajouter les paramètres à l'environnement
     paramEnv <- foldl addParam (Right env) params
     -- Vérifier le corps de la fonction
