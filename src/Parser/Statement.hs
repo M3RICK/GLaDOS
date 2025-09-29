@@ -5,8 +5,15 @@ import Parser.Expr
 import AST.AST
 
 import Text.Megaparsec
+import Text.Megaparsec.Char (eol)
 import Control.Monad (void)
 
+
+-- Optional semicolon helper function
+------------------------------------------------------------
+
+endStmt :: Parser()
+endStmt = void semi <|> void (lexeme eol)
 
 -- If / Else
 ------------------------------------------------------------
@@ -30,7 +37,7 @@ pWhile = do
   return (While cond body)
 
 
--- Top-level: statement parser
+-- Statement parser
 ------------------------------------------------------------
 
 pStatement :: Parser Statement
@@ -40,7 +47,7 @@ pStatement =
   <|> try pReturn
   <|> try pIf
   <|> try pWhile
-  <|> ExprStmt <$> (pExpr <* semi)  -- catch function calls etc.
+  <|> ExprStmt <$> (pExpr <* endStmt)  -- catch function calls etc.
 
 -- Declaration: int x; | int x = expr;
 ------------------------------------------------------------
@@ -50,7 +57,7 @@ pDecl = do
   t <- pType
   name <- pIdentifier
   initVal <- optional (symbol "=" *> pExpr)
-  semi
+  endStmt
   return (Decl t name initVal)
 
 -- Assignment: x = expr;
@@ -61,15 +68,15 @@ pAssign = do
   name <- pIdentifier
   void (symbol "=")
   expr <- pExpr
-  semi
+  endStmt
   return (Assign name expr)
 
--- Return: return expr;
+-- Return return expr;
 ------------------------------------------------------------
 
 pReturn :: Parser Statement
 pReturn = do
   void (symbol "return")
   expr <- pExpr
-  semi
+  endStmt
   return (Return expr)
