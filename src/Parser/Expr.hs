@@ -38,12 +38,12 @@ operatorTable :: [[Operator Parser Expr]]
 operatorTable =
   [ [ binary "*" (BinOp Mul), binary "/" (BinOp Div) ]
   , [ binary "+" (BinOp Add), binary "-" (BinOp Sub) ]
-  , [ binary "==" (BinOp Eq), binary "!=" (BinOp Neq)
-    , binary "<" (BinOp Lt), binary ">" (BinOp Gt)
-    , binary "<=" (BinOp Le), binary ">=" (BinOp Ge) ]
+  , [ binary "<=" (BinOp Le), binary ">=" (BinOp Ge)
+    , binary "==" (BinOp Eq), binary "!=" (BinOp Neq)
+    , binary "<" (BinOp Lt), binary ">" (BinOp Gt) ]
   , [ binary "&&" (BinOp And) ]
   , [ binary "||" (BinOp Or) ]
   ]
 
 binary :: String -> (Expr -> Expr -> Expr) -> Operator Parser Expr
-binary name f = InfixL (f <$ symbol name)
+binary name f = InfixL (f <$ try (symbol name))  -- Added try here

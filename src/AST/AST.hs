@@ -15,8 +15,8 @@ data Function = Function
 
 -- | Function parameter
 data Parameter = Parameter
-  { pType :: Type
-  , pName :: String
+  { paramType :: Type
+  , paramName :: String
   }
   deriving (Show, Eq)
 
