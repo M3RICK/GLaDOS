@@ -12,7 +12,7 @@ A functional programming language interpreter built in Haskell. This project imp
 
 ## Technologies Used
 - **Language**: Haskell (GHC 9.6.3)
-- **Build System**: Stack (LTS 22.6)
+- **Build System**: Stack (LTS 22.6)  IT CHANGED THIERRY DONT FORGET TO CHANGE
 - **Testing Framework**: Hspec
 - **Parser Library**: Megaparsec
 - **Resolver**: lts-22.6
