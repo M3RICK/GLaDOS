@@ -56,12 +56,12 @@ spec = do
 
 
     describe "compileFunc" $ do
-        it "compiles a simple function returning 5 + 3" $ do
+        it "compiles a function returning 5 + 3" $ do
             let func = Function
                     { fType = TypeInt
-                    , fName = "add"
+                    , fName = "test"
                     , fParams = []
                     , fBody = [Return (BinOp Add (NumLit 5) (NumLit 3))]
                     }
             let result = compileFunc 0 func
-            funcBody result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.I64Add, Wasm.Return]
+            body result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.Return]
