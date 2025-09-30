@@ -8,6 +8,8 @@ import qualified Data.Text.Lazy as T
 
 spec :: Spec
 spec = do
+
+
     describe "makeFuncType" $ do
         it "converts a function with two int params returning int" $ do
             let func = Function
@@ -29,6 +31,8 @@ spec = do
             let result = makeFuncType func
             result `shouldBe` Wasm.FuncType [] []
 
+
+
     describe "makeExport" $ do
         it "exports add function at index 0" $ do
             let func = Function
@@ -49,3 +53,15 @@ spec = do
                     }
             let result = makeExport 1 func
             result `shouldBe` Wasm.Export (T.pack "multiply") (Wasm.ExportFunc 1)
+
+
+    describe "compileFunc" $ do
+        it "compiles a simple function returning 5 + 3" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "add"
+                    , fParams = []
+                    , fBody = [Return (BinOp Add (NumLit 5) (NumLit 3))]
+                    }
+            let result = compileFunc 0 func
+            funcBody result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.I64Add, Wasm.Return]
