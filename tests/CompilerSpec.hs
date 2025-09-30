@@ -63,5 +63,5 @@ spec = do
                     , fParams = []
                     , fBody = [Return (BinOp Add (NumLit 5) (NumLit 3))]
                     }
-            let result = compileFunc 0 func
-            body result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.Return]
+            let Wasm.Function _ _ resultBody = compileFunc 0 func
+            resultBody `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.Return]
