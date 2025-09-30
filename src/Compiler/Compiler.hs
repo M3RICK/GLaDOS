@@ -1,16 +1,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Compiler.Compiler where
+module Compiler.Compiler (astToWasm, makeFuncType, makeExport ,compileFunc) where
 
 import AST.AST
 import qualified Language.Wasm.Structure as Wasm
-import Language.Wasm.Structure (FuncType(..), ValueType(..))
 import qualified Data.Text.Lazy as T -- Idk i think it's like a cast since i returned string but expected text
 import Numeric.Natural (Natural) -- WebAssembly needs a absolute val, no potential negatives so no ints pretty much
 
--- Placeholder creates a empty module for now
+-- TODO: Will assemble complete module with types, functions, and exports
 astToWasm :: Program -> Wasm.Module
-astToWasm program =
-    Wasm.emptyModule
+astToWasm _program = Wasm.emptyModule -- DONT FORGET TO REMOVE '_' FROM program
 
 -- Basically formats each function to wasm 
 makeFuncType :: Function -> Wasm.FuncType
@@ -40,7 +38,7 @@ makeExport funcIndex (Function {fName}) =
 
 -- Takes an (AST Function) turns it into a (Wasm.Function). typeIndex = type signature, [] = variables (will be added later), finally the wasm instructions themselfes
 compileFunc :: Natural -> Function -> Wasm.Function
-compileFunc typeIndex (Function {fParams, fBody}) =
+compileFunc typeIndex (Function {fBody}) =
   Wasm.Function typeIndex [] (compileStatements fBody)
 
 -- Plural there is a S at the end dummy

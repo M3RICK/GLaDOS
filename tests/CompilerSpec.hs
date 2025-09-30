@@ -1,4 +1,4 @@
-module CompilerSpec where
+module CompilerSpec (spec) where
 
 import Test.Hspec
 import Compiler.Compiler

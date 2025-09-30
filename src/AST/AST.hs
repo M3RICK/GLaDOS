@@ -1,4 +1,4 @@
-module AST.AST where
+module AST.AST (Program(..), Function(..), Parameter(..), Statement(..), Expr(..), Type(..), Op(..)) where
 
 -- | A whole program = list of functions
 data Program = Program [Function]
