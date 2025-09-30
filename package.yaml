@@ -17,6 +17,7 @@ dependencies:
 - containers
 - mtl
 - wasm
+- text
 
 ghc-options:
 - -Wall
