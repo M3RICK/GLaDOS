@@ -41,4 +41,6 @@ data TypeError
       }
   | ReturnTypeMismatch Type Type SourcePos
   | UninitializedVar String SourcePos
+  | MissingReturn String
+  | DivisionByZero SourcePos
   deriving (Show, Eq)
