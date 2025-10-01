@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Compiler.Compiler (astToWasm, makeFuncType, makeExport, compileFunc, compileExpr, buildVarTable, VarTable, buildFuncTable, FuncTable) where
+module Compiler.Compiler (astToWasm, makeFuncType, makeExport, compileFunc, compileExpr, compileStatement, buildVarTable, VarTable, buildFuncTable, FuncTable, collectDecls) where
 
 import AST.AST
 import qualified Language.Wasm.Structure as Wasm
@@ -23,6 +23,15 @@ buildVarTable params =
 buildFuncTable :: [Function] -> FuncTable
 buildFuncTable funcs =
   Map.fromList $ zip (map fName funcs) [0..] -- zip = ["main", "add", "sub"] [0, 1, 2] -> [("main", 0), ("add", 1), ("sub", 2)]
+
+-- Collects all variable declarations from statements (recursive scan)
+collectDecls :: [Statement] -> [(String, Type)]
+collectDecls [] = []
+collectDecls (stmt:rest) = case stmt of
+  Decl varType varName _ -> (varName, varType) : collectDecls rest
+  If _ thenBody elseBody -> collectDecls thenBody ++ maybe [] collectDecls elseBody ++ collectDecls rest
+  While _ whileBody -> collectDecls whileBody ++ collectDecls rest
+  _ -> collectDecls rest
 
 -- Basically formats each function to wasm
 makeFuncType :: Function -> Wasm.FuncType
@@ -50,11 +59,19 @@ makeExport :: Natural -> Function -> Wasm.Export
 makeExport funcIndex (Function {fName}) = 
   Wasm.Export (T.pack fName) (Wasm.ExportFunc funcIndex)
 
--- Takes an (AST Function) turns it into a (Wasm.Function). typeIndex = type signature, [] = variables (will be added later), finally the wasm instructions themselfes
+-- Takes an (AST Function) turns it into a (Wasm.Function). typeIndex = type signature, localTypes = types for local vars, finally the wasm instructions themselves
 compileFunc :: FuncTable -> Natural -> Function -> Wasm.Function
 compileFunc funcTable typeIndex (Function {fParams, fBody}) =
-  let varTable = buildVarTable fParams
-  in Wasm.Function typeIndex [] (compileStatements funcTable varTable fBody)
+  let
+    paramCount = fromIntegral (length fParams) -- Build VarTable from parameters
+    paramTable = buildVarTable fParams
+    declaredVars = collectDecls fBody -- Start scan and look for declarations to put in VarTable
+    localIndices = [paramCount..] -- Start indices after params
+    localTable = Map.fromList $ zip (map fst declaredVars) localIndices
+    completeVarTable = Map.union paramTable localTable -- Fuse tables with ofc param first before local
+    localTypes = map (\var -> convertType (snd var)) declaredVars -- Build localTypes list (only declared locals, not params you tard)
+    instructions = compileStatements funcTable completeVarTable fBody -- Compile body since in theory VarTable should be complete
+  in Wasm.Function typeIndex localTypes instructions
 
 -- Plural there is a S at the end dummy
 compileStatements :: FuncTable -> VarTable -> [Statement] -> [Wasm.Instruction Natural]
@@ -62,8 +79,37 @@ compileStatements funcTable varTable = concatMap (compileStatement funcTable var
 
 -- Singular no S
 compileStatement :: FuncTable -> VarTable -> Statement -> [Wasm.Instruction Natural]
-compileStatement funcTable varTable (Return expr) = compileExpr funcTable varTable expr ++ [Wasm.Return]
-compileStatement _ _ _ = error "TODO: other statements"
+compileStatement funcTable varTable (Return expr) = -- Return: calculate value and return it
+  compileExpr funcTable varTable expr ++ [Wasm.Return]
+compileStatement funcTable varTable (Decl _ varName maybeExpr) = -- Variable declaration: if there's a starting value, calculate it and save it
+  case maybeExpr of
+    Nothing -> [] -- No starting value, variable is 0
+    Just expr -> case Map.lookup varName varTable of
+      Just idx -> compileExpr funcTable varTable expr ++ [Wasm.SetLocal idx]
+      Nothing -> error $ "Variable not in table: " ++ varName
+compileStatement funcTable varTable (Assign varName expr) = -- Assignment: calculate new value and save it to variable
+  case Map.lookup varName varTable of
+    Just idx -> compileExpr funcTable varTable expr ++ [Wasm.SetLocal idx]
+    Nothing -> error $ "Variable not found: " ++ varName
+compileStatement funcTable varTable (ExprStmt expr) = -- Expression by itself: calculate it but throw away result
+  compileExpr funcTable varTable expr ++ [Wasm.Drop]
+compileStatement funcTable varTable (If condExpr thenBody elseBody) = -- If: check condition, run 'then' code or 'else' code
+  let
+    condInstructions = compileExpr funcTable varTable condExpr
+    thenInstructions = compileStatements funcTable varTable thenBody
+    elseInstructions = maybe [] (compileStatements funcTable varTable) elseBody
+  in condInstructions ++ [Wasm.If (Wasm.Inline Nothing) thenInstructions elseInstructions]
+compileStatement funcTable varTable (While condExpr loopBody) = -- While: keep repeating body as long as condition is true
+  let
+    condInstructions = compileExpr funcTable varTable condExpr -- Check condition
+    bodyInstructions = compileStatements funcTable varTable loopBody -- Body to repeat
+    -- Structure: outer box { inner loop { if (condition true) { run body; jump back } else { exit } } }
+    loopContent = condInstructions ++
+                  [Wasm.If (Wasm.Inline Nothing)
+                    (bodyInstructions ++ [Wasm.Br 1]) -- Jump back to keep looping
+                    [Wasm.Br 0]] -- Jump out to stop
+  in [Wasm.Block (Wasm.Inline Nothing)
+        [Wasm.Loop (Wasm.Inline Nothing) loopContent]]
 
 -- Execution of the expressions, removes previos info from stack like [5, 3] and replaces it with final value like [8] (if it's a addition ofc)
 compileExpr :: FuncTable -> VarTable -> Expr -> [Wasm.Instruction Natural]
