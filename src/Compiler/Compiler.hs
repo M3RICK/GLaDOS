@@ -9,9 +9,27 @@ import qualified Data.Map as Map
 type VarTable = Map.Map String Natural -- Maps variable names to their local indices in WebAssembly
 type FuncTable = Map.Map String Natural -- Maps function names to their indices in WebAssembly
 
--- TODO: Will assemble complete module with types, functions, and exports
+-- Assembles complete module with types, functions, and exports
 astToWasm :: Program -> Wasm.Module
-astToWasm _program = Wasm.emptyModule -- DONT FORGET TO REMOVE '_' FROM program
+astToWasm (Program funcs) =
+    let
+        funcTable = buildFuncTable funcs -- Create function lookup table
+        funcTypes = map makeFuncType funcs -- Generate type signatures for each function
+        indices = [0..] -- Indices for both types and functions (0, 1, 2, ...)
+        compiledFuncs = zipWith (compileFunc funcTable) indices funcs -- Compile each function body
+        funcExports = zipWith makeExport indices funcs -- Export each function
+    in Wasm.Module
+        { Wasm.types = funcTypes
+        , Wasm.functions = compiledFuncs
+        , Wasm.tables = []
+        , Wasm.mems = []
+        , Wasm.globals = []
+        , Wasm.elems = []
+        , Wasm.datas = []
+        , Wasm.start = Nothing
+        , Wasm.imports = []
+        , Wasm.exports = funcExports
+        }
 
 -- Creates a var table
 buildVarTable :: [Parameter] -> VarTable
