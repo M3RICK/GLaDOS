@@ -4,6 +4,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Data.Void
+import AST.AST (Located(..))
 
 type Parser = Parsec Void String
 
@@ -20,6 +21,13 @@ lexeme = L.lexeme whitespace
 symbol :: String -> Parser String
 symbol = L.symbol whitespace
 
+-- Helper to wrap parsed values with source position
+located :: Parser a -> Parser (Located a)
+located p = do
+  pos <- getSourcePos
+  val <- p
+  return (Located pos val)
+
 -- symbols
 ------------------------------------------------------------
 
@@ -35,7 +43,6 @@ semi = symbol ";"
 comma :: Parser String
 comma = symbol ","
 
-
 -- Key words and Identifiers
 ------------------------------------------------------------
 
@@ -47,9 +54,9 @@ keywords =
   , "true", "false"
   ]
 
--- Parse an identifier (letter followed by letters/digits/_)
-pIdentifier :: Parser String
-pIdentifier = (lexeme . try) (p >>= check)
+-- Parse an identifier (returns Located String for position tracking)
+pIdentifier :: Parser (Located String)
+pIdentifier = located $ (lexeme . try) (p >>= check)
   where
     p = (:) <$> identStart <*> many identChar
     identStart = letterChar <|> char '_'
@@ -61,11 +68,12 @@ pIdentifier = (lexeme . try) (p >>= check)
 -- Literals
 ------------------------------------------------------------
 
--- | Parse an integer literal
-pNumber :: Parser Int
-pNumber = lexeme L.decimal
+-- Parse an integer literal with position
+pNumber :: Parser (Located Int)
+pNumber = located (lexeme L.decimal)
 
--- Parse a boolean
-pBool :: Parser Bool
-pBool =  (True <$ symbol "true")
-     <|> (False <$ symbol "false")
+-- Parse a boolean with position
+pBool :: Parser (Located Bool)
+pBool = located $
+      (True <$ symbol "true")
+  <|> (False <$ symbol "false")
