@@ -425,3 +425,284 @@ spec = do
                     }
             let Wasm.Function _ localTypes _ = compileFunc emptyFuncTable 0 func
             localTypes `shouldBe` [Wasm.I64]
+
+
+-- ============================================================================
+-- astToWasm Integration Tests - The Real Deal
+-- ============================================================================
+
+    describe "astToWasm - Edge Cases & Full Integration" $ do
+
+        it "compiles empty program (no functions)" $ do
+            let program = Program []
+            let result = astToWasm program
+            Wasm.types result `shouldBe` []
+            Wasm.functions result `shouldBe` []
+            Wasm.exports result `shouldBe` []
+            Wasm.tables result `shouldBe` []
+            Wasm.mems result `shouldBe` []
+            Wasm.globals result `shouldBe` []
+
+        it "compiles single function returning constant" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "fortytwo"
+                    , fParams = []
+                    , fBody = [Return (NumLit (loc 42))]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            length (Wasm.types result) `shouldBe` 1
+            length (Wasm.functions result) `shouldBe` 1
+            length (Wasm.exports result) `shouldBe` 1
+            Wasm.types result `shouldBe` [Wasm.FuncType [] [Wasm.I64]]
+            Wasm.exports result `shouldBe` [Wasm.Export (T.pack "fortytwo") (Wasm.ExportFunc 0)]
+
+        it "compiles void function" $ do
+            let func = Function
+                    { fType = TypeVoid
+                    , fName = "doNothing"
+                    , fParams = []
+                    , fBody = []
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            Wasm.types result `shouldBe` [Wasm.FuncType [] []]
+            length (Wasm.functions result) `shouldBe` 1
+
+        it "compiles multiple functions with correct indices" $ do
+            let func1 = Function TypeInt "first" [] [Return (NumLit (loc 1))]
+            let func2 = Function TypeInt "second" [] [Return (NumLit (loc 2))]
+            let func3 = Function TypeInt "third" [] [Return (NumLit (loc 3))]
+            let program = Program [func1, func2, func3]
+            let result = astToWasm program
+            length (Wasm.types result) `shouldBe` 3
+            length (Wasm.functions result) `shouldBe` 3
+            length (Wasm.exports result) `shouldBe` 3
+            Wasm.exports result `shouldBe` [ Wasm.Export (T.pack "first") (Wasm.ExportFunc 0)
+                                           , Wasm.Export (T.pack "second") (Wasm.ExportFunc 1)
+                                           , Wasm.Export (T.pack "third") (Wasm.ExportFunc 2)
+                                           ]
+
+        it "compiles function with parameters" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "add"
+                    , fParams = [Parameter TypeInt "a", Parameter TypeInt "b"]
+                    , fBody = [Return (BinOp Add (loc (Var (loc "a"))) (loc (Var (loc "b"))))]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            Wasm.types result `shouldBe` [Wasm.FuncType [Wasm.I64, Wasm.I64] [Wasm.I64]]
+
+        it "compiles function calling another function" $ do
+            let helper = Function TypeInt "helper" [] [Return (NumLit (loc 42))]
+            let main = Function
+                    { fType = TypeInt
+                    , fName = "main"
+                    , fParams = []
+                    , fBody = [Return (Call (loc "helper") [])]
+                    }
+            let program = Program [helper, main]
+            let result = astToWasm program
+            length (Wasm.functions result) `shouldBe` 2
+            let Wasm.Function _ _ mainBody = Wasm.functions result !! 1
+            mainBody `shouldBe` [Wasm.Call 0, Wasm.Return]
+
+        it "compiles function with all statement types" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "complex"
+                    , fParams = [Parameter TypeInt "n"]
+                    , fBody = [ Decl TypeInt "result" (Just (NumLit (loc 0)))
+                              , Decl TypeInt "i" (Just (NumLit (loc 0)))
+                              , While (BinOp Lt (loc (Var (loc "i"))) (loc (Var (loc "n"))))
+                                  [ Assign "result" (BinOp Add (loc (Var (loc "result"))) (loc (Var (loc "i"))))
+                                  , Assign "i" (BinOp Add (loc (Var (loc "i"))) (loc (NumLit (loc 1))))
+                                  ]
+                              , If (BinOp Gt (loc (Var (loc "result"))) (loc (NumLit (loc 100))))
+                                  [Assign "result" (NumLit (loc 100))]
+                                  Nothing
+                              , Return (Var (loc "result"))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            let Wasm.Function _ localTypes _ = head (Wasm.functions result)
+            localTypes `shouldBe` [Wasm.I64, Wasm.I64]
+
+        it "compiles function with nested if-else" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "nested"
+                    , fParams = [Parameter TypeInt "x"]
+                    , fBody = [ If (BinOp Gt (loc (Var (loc "x"))) (loc (NumLit (loc 10))))
+                                  [ If (BinOp Lt (loc (Var (loc "x"))) (loc (NumLit (loc 20))))
+                                      [Return (NumLit (loc 1))]
+                                      (Just [Return (NumLit (loc 2))])
+                                  ]
+                                  (Just [Return (NumLit (loc 3))])
+                              , Return (NumLit (loc 0))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            length (Wasm.functions result) `shouldBe` 1
+
+        it "compiles function with multiple local variables" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "manyLocals"
+                    , fParams = []
+                    , fBody = [ Decl TypeInt "a" (Just (NumLit (loc 1)))
+                              , Decl TypeInt "b" (Just (NumLit (loc 2)))
+                              , Decl TypeInt "c" (Just (NumLit (loc 3)))
+                              , Decl TypeInt "d" (Just (NumLit (loc 4)))
+                              , Decl TypeInt "e" (Just (NumLit (loc 5)))
+                              , Return (BinOp Add
+                                  (loc (BinOp Add (loc (Var (loc "a"))) (loc (Var (loc "b")))))
+                                  (loc (BinOp Add (loc (Var (loc "c"))) (loc (BinOp Add (loc (Var (loc "d"))) (loc (Var (loc "e"))))))))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            let Wasm.Function _ localTypes _ = head (Wasm.functions result)
+            localTypes `shouldBe` [Wasm.I64, Wasm.I64, Wasm.I64, Wasm.I64, Wasm.I64]
+
+        it "compiles function with many parameters" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "sumFive"
+                    , fParams = [ Parameter TypeInt "a", Parameter TypeInt "b"
+                                , Parameter TypeInt "c", Parameter TypeInt "d"
+                                , Parameter TypeInt "e"
+                                ]
+                    , fBody = [Return (BinOp Add
+                                (loc (BinOp Add (loc (Var (loc "a"))) (loc (Var (loc "b")))))
+                                (loc (BinOp Add (loc (Var (loc "c"))) (loc (BinOp Add (loc (Var (loc "d"))) (loc (Var (loc "e"))))))))]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            Wasm.types result `shouldBe` [Wasm.FuncType [Wasm.I64, Wasm.I64, Wasm.I64, Wasm.I64, Wasm.I64] [Wasm.I64]]
+
+        it "compiles recursive function call" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "factorial"
+                    , fParams = [Parameter TypeInt "n"]
+                    , fBody = [ If (BinOp Le (loc (Var (loc "n"))) (loc (NumLit (loc 1))))
+                                  [Return (NumLit (loc 1))]
+                                  (Just [Return (BinOp Mul
+                                      (loc (Var (loc "n")))
+                                      (loc (Call (loc "factorial") [BinOp Sub (loc (Var (loc "n"))) (loc (NumLit (loc 1)))])))])
+                              , Return (NumLit (loc 1))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            length (Wasm.functions result) `shouldBe` 1
+
+        it "compiles function with expression statement (function call for side effects)" $ do
+            let helper = Function TypeInt "sideEffect" [] [Return (NumLit (loc 0))]
+            let main = Function
+                    { fType = TypeInt
+                    , fName = "main"
+                    , fParams = []
+                    , fBody = [ ExprStmt (Call (loc "sideEffect") [])
+                              , Return (NumLit (loc 42))
+                              ]
+                    }
+            let program = Program [helper, main]
+            let result = astToWasm program
+            let Wasm.Function _ _ mainBody = Wasm.functions result !! 1
+            -- Should have: Call 0, Drop, I64Const 42, Return
+            mainBody `shouldBe` [Wasm.Call 0, Wasm.Drop, Wasm.I64Const 42, Wasm.Return]
+
+        it "compiles function with boolean operations" $ do
+            let func = Function
+                    { fType = TypeBool
+                    , fName = "logicTest"
+                    , fParams = [Parameter TypeBool "a", Parameter TypeBool "b"]
+                    , fBody = [Return (BinOp And (loc (Var (loc "a"))) (loc (Var (loc "b"))))]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            Wasm.types result `shouldBe` [Wasm.FuncType [Wasm.I32, Wasm.I32] [Wasm.I32]]
+
+        it "compiles function with mixed bool and int types" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "conditional"
+                    , fParams = [Parameter TypeBool "flag"]
+                    , fBody = [ If (Var (loc "flag"))
+                                  [Return (NumLit (loc 100))]
+                                  (Just [Return (NumLit (loc 200))])
+                              , Return (NumLit (loc 0))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            Wasm.types result `shouldBe` [Wasm.FuncType [Wasm.I32] [Wasm.I64]]
+
+        it "compiles program with functions that call each other" $ do
+            let func1 = Function
+                    { fType = TypeInt
+                    , fName = "funcA"
+                    , fParams = [Parameter TypeInt "x"]
+                    , fBody = [Return (Call (loc "funcB") [Var (loc "x")])]
+                    }
+            let func2 = Function
+                    { fType = TypeInt
+                    , fName = "funcB"
+                    , fParams = [Parameter TypeInt "y"]
+                    , fBody = [Return (BinOp Mul (loc (Var (loc "y"))) (loc (NumLit (loc 2))))]
+                    }
+            let program = Program [func1, func2]
+            let result = astToWasm program
+            let Wasm.Function _ _ func1Body = Wasm.functions result !! 0
+            -- funcA should call funcB (index 1)
+            func1Body `shouldBe` [Wasm.GetLocal 0, Wasm.Call 1, Wasm.Return]
+
+        it "compiles function with locals declared inside if blocks" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "nestedDecl"
+                    , fParams = [Parameter TypeInt "x"]
+                    , fBody = [ If (BinOp Gt (loc (Var (loc "x"))) (loc (NumLit (loc 0))))
+                                  [Decl TypeInt "positive" (Just (NumLit (loc 1)))]
+                                  (Just [Decl TypeInt "negative" (Just (NumLit (loc (-1))))])
+                              , Return (NumLit (loc 0))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            let Wasm.Function _ localTypes _ = head (Wasm.functions result)
+            -- Should collect both locals
+            length localTypes `shouldBe` 2
+
+        it "compiles function with locals declared inside while loops" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "loopDecl"
+                    , fParams = []
+                    , fBody = [ While (BoolLit (loc False))
+                                  [Decl TypeInt "temp" (Just (NumLit (loc 99)))]
+                              , Return (NumLit (loc 0))
+                              ]
+                    }
+            let program = Program [func]
+            let result = astToWasm program
+            let Wasm.Function _ localTypes _ = head (Wasm.functions result)
+            localTypes `shouldBe` [Wasm.I64]
+
+        it "compiles large program with many functions" $ do
+            let funcs = [ Function TypeInt ("func" ++ show i) [] [Return (NumLit (loc i))] | i <- [0..9] ]
+            let program = Program funcs
+            let result = astToWasm program
+            length (Wasm.types result) `shouldBe` 10
+            length (Wasm.functions result) `shouldBe` 10
+            length (Wasm.exports result) `shouldBe` 10
+            -- Check exports are correctly named and indexed
+            Wasm.exports result !! 0 `shouldBe` Wasm.Export (T.pack "func0") (Wasm.ExportFunc 0)
+            Wasm.exports result !! 5 `shouldBe` Wasm.Export (T.pack "func5") (Wasm.ExportFunc 5)
+            Wasm.exports result !! 9 `shouldBe` Wasm.Export (T.pack "func9") (Wasm.ExportFunc 9)
