@@ -4,6 +4,7 @@ import Security.Types
 import Security.Environment
 import Security.StatementCheckers
 import AST.AST
+import Security.ReturnChecker (listHasReturn)
 
 checkProgram :: Program -> Either [TypeError] Program
 checkProgram prog@(Program funcs) =
@@ -18,4 +19,12 @@ checkAllFunctions funcs =
 checkFunction :: FuncEnv -> Function -> [TypeError]
 checkFunction funcEnv func =
   let env = makeFunctionEnv funcEnv func
-  in checkStatements env (fBody func)
+      stmtErrors = checkStatements env (fBody func)
+      returnError = checkFunctionReturns func
+  in stmtErrors ++ returnError
+
+checkFunctionReturns :: Function -> [TypeError]
+checkFunctionReturns func
+  | fType func == TypeVoid = []  -- Si void function pas besoin de return
+  | listHasReturn (fBody func) = [] -- c est bueno
+  | otherwise = [MissingReturn (fName func)] -- c est pas bueno
