@@ -14,6 +14,9 @@ loc = Located (initialPos "<test>")
 spec :: Spec
 spec = do
 
+-- ============================================================================
+-- makeFuncType Tests
+-- ============================================================================
 
     describe "makeFuncType" $ do
         it "converts a function with two int params returning int" $ do
@@ -36,7 +39,9 @@ spec = do
             let result = makeFuncType func
             result `shouldBe` Wasm.FuncType [] []
 
-
+-- ============================================================================
+-- makeExport Tests
+-- ============================================================================
 
     describe "makeExport" $ do
         it "exports add function at index 0" $ do
@@ -59,6 +64,9 @@ spec = do
             let result = makeExport 1 func
             result `shouldBe` Wasm.Export (T.pack "multiply") (Wasm.ExportFunc 1)
 
+-- ============================================================================
+-- compileFunc Tests
+-- ============================================================================
 
     describe "compileFunc" $ do
         it "compiles a function returning 5 + 3" $ do
@@ -70,3 +78,105 @@ spec = do
                     }
             let Wasm.Function _ _ resultBody = compileFunc 0 func
             resultBody `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.Return]
+
+-- ============================================================================
+-- compileExpr Tests
+-- ============================================================================
+
+    describe "compileExpr - Literals" $ do
+        it "compiles integer literal" $ do
+            let result = compileExpr (NumLit (loc 42))
+            result `shouldBe` [Wasm.I64Const 42]
+
+        it "compiles negative integer literal" $ do
+            let result = compileExpr (NumLit (loc (-17)))
+            result `shouldBe` [Wasm.I64Const (-17)]
+
+        it "compiles boolean literal true" $ do
+            let result = compileExpr (BoolLit (loc True))
+            result `shouldBe` [Wasm.I32Const 1]
+
+        it "compiles boolean literal false" $ do
+            let result = compileExpr (BoolLit (loc False))
+            result `shouldBe` [Wasm.I32Const 0]
+
+
+    describe "compileExpr - Arithmetic Operations" $ do
+        it "compiles addition" $ do
+            let result = compileExpr (BinOp Add (loc (NumLit (loc 10))) (loc (NumLit (loc 20))))
+            result `shouldBe` [Wasm.I64Const 10, Wasm.I64Const 20, Wasm.IBinOp Wasm.BS64 Wasm.IAdd]
+
+        it "compiles subtraction" $ do
+            let result = compileExpr (BinOp Sub (loc (NumLit (loc 50))) (loc (NumLit (loc 30))))
+            result `shouldBe` [Wasm.I64Const 50, Wasm.I64Const 30, Wasm.IBinOp Wasm.BS64 Wasm.ISub]
+
+        it "compiles multiplication" $ do
+            let result = compileExpr (BinOp Mul (loc (NumLit (loc 7))) (loc (NumLit (loc 6))))
+            result `shouldBe` [Wasm.I64Const 7, Wasm.I64Const 6, Wasm.IBinOp Wasm.BS64 Wasm.IMul]
+
+        it "compiles division" $ do
+            let result = compileExpr (BinOp Div (loc (NumLit (loc 100))) (loc (NumLit (loc 5))))
+            result `shouldBe` [Wasm.I64Const 100, Wasm.I64Const 5, Wasm.IBinOp Wasm.BS64 Wasm.IDivS]
+
+
+    describe "compileExpr - Comparison Operations" $ do
+        it "compiles equality comparison" $ do
+            let result = compileExpr (BinOp Eq (loc (NumLit (loc 5))) (loc (NumLit (loc 5))))
+            result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 5, Wasm.IRelOp Wasm.BS64 Wasm.IEq]
+
+        it "compiles not equal comparison" $ do
+            let result = compileExpr (BinOp Neq (loc (NumLit (loc 3))) (loc (NumLit (loc 7))))
+            result `shouldBe` [Wasm.I64Const 3, Wasm.I64Const 7, Wasm.IRelOp Wasm.BS64 Wasm.INe]
+
+        it "compiles less than comparison" $ do
+            let result = compileExpr (BinOp Lt (loc (NumLit (loc 2))) (loc (NumLit (loc 8))))
+            result `shouldBe` [Wasm.I64Const 2, Wasm.I64Const 8, Wasm.IRelOp Wasm.BS64 Wasm.ILtS]
+
+        it "compiles greater than comparison" $ do
+            let result = compileExpr (BinOp Gt (loc (NumLit (loc 15))) (loc (NumLit (loc 10))))
+            result `shouldBe` [Wasm.I64Const 15, Wasm.I64Const 10, Wasm.IRelOp Wasm.BS64 Wasm.IGtS]
+
+        it "compiles less than or equal comparison" $ do
+            let result = compileExpr (BinOp Le (loc (NumLit (loc 5))) (loc (NumLit (loc 5))))
+            result `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 5, Wasm.IRelOp Wasm.BS64 Wasm.ILeS]
+
+        it "compiles greater than or equal comparison" $ do
+            let result = compileExpr (BinOp Ge (loc (NumLit (loc 12))) (loc (NumLit (loc 8))))
+            result `shouldBe` [Wasm.I64Const 12, Wasm.I64Const 8, Wasm.IRelOp Wasm.BS64 Wasm.IGeS]
+
+
+    describe "compileExpr - Logic Operations" $ do
+        it "compiles logical AND with two true values" $ do
+            let result = compileExpr (BinOp And (loc (BoolLit (loc True))) (loc (BoolLit (loc True))))
+            result `shouldBe` [Wasm.I32Const 1, Wasm.I32Const 1, Wasm.IBinOp Wasm.BS32 Wasm.IAnd]
+
+        it "compiles logical AND with true and false" $ do
+            let result = compileExpr (BinOp And (loc (BoolLit (loc True))) (loc (BoolLit (loc False))))
+            result `shouldBe` [Wasm.I32Const 1, Wasm.I32Const 0, Wasm.IBinOp Wasm.BS32 Wasm.IAnd]
+
+        it "compiles logical OR with two false values" $ do
+            let result = compileExpr (BinOp Or (loc (BoolLit (loc False))) (loc (BoolLit (loc False))))
+            result `shouldBe` [Wasm.I32Const 0, Wasm.I32Const 0, Wasm.IBinOp Wasm.BS32 Wasm.IOr]
+
+        it "compiles logical OR with false and true" $ do
+            let result = compileExpr (BinOp Or (loc (BoolLit (loc False))) (loc (BoolLit (loc True))))
+            result `shouldBe` [Wasm.I32Const 0, Wasm.I32Const 1, Wasm.IBinOp Wasm.BS32 Wasm.IOr]
+
+
+    describe "compileExpr - Nested Expressions" $ do
+        it "compiles nested arithmetic (2 + 3) * 4" $ do
+            let expr = BinOp Mul
+                        (loc (BinOp Add (loc (NumLit (loc 2))) (loc (NumLit (loc 3)))))
+                        (loc (NumLit (loc 4)))
+            let result = compileExpr expr
+            result `shouldBe` [ Wasm.I64Const 2, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd
+                              , Wasm.I64Const 4, Wasm.IBinOp Wasm.BS64 Wasm.IMul ]
+
+        it "compiles comparison of arithmetic expressions (10 + 5) < (20 - 3)" $ do
+            let expr = BinOp Lt
+                        (loc (BinOp Add (loc (NumLit (loc 10))) (loc (NumLit (loc 5)))))
+                        (loc (BinOp Sub (loc (NumLit (loc 20))) (loc (NumLit (loc 3)))))
+            let result = compileExpr expr
+            result `shouldBe` [ Wasm.I64Const 10, Wasm.I64Const 5, Wasm.IBinOp Wasm.BS64 Wasm.IAdd
+                              , Wasm.I64Const 20, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.ISub
+                              , Wasm.IRelOp Wasm.BS64 Wasm.ILtS ]
