@@ -5,6 +5,11 @@ import Compiler.Compiler
 import AST.AST
 import qualified Language.Wasm.Structure as Wasm
 import qualified Data.Text.Lazy as T
+import Text.Megaparsec.Pos (initialPos, SourcePos)
+
+-- Helper to create Located values for tests (using dummy position)
+loc :: a -> Located a
+loc = Located (initialPos "<test>")
 
 spec :: Spec
 spec = do
@@ -61,7 +66,7 @@ spec = do
                     { fType = TypeInt
                     , fName = "test"
                     , fParams = []
-                    , fBody = [Return (BinOp Add (NumLit 5) (NumLit 3))]
+                    , fBody = [Return (BinOp Add (loc (NumLit (loc 5))) (loc (NumLit (loc 3))))]
                     }
             let Wasm.Function _ _ resultBody = compileFunc 0 func
             resultBody `shouldBe` [Wasm.I64Const 5, Wasm.I64Const 3, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.Return]

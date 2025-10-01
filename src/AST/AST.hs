@@ -1,4 +1,6 @@
-module AST.AST (Program(..), Function(..), Parameter(..), Statement(..), Expr(..), Type(..), Op(..)) where
+module AST.AST where
+
+import Text.Megaparsec.Pos (SourcePos)
 
 -- | A whole program = list of functions
 data Program = Program [Function]
@@ -15,8 +17,8 @@ data Function = Function
 
 -- | Function parameter
 data Parameter = Parameter
-  { pType :: Type
-  , pName :: String
+  { paramType :: Type
+  , paramName :: String
   }
   deriving (Show, Eq)
 
@@ -32,11 +34,11 @@ data Statement
 
 -- | Expressions
 data Expr
-  = BoolLit Bool
-  | NumLit Int
-  | Var String
-  | BinOp Op Expr Expr
-  | Call String [Expr]      -- function calls, e.g. foo(1,2)
+  = BoolLit (Located Bool)
+  | NumLit (Located Int)
+  | Var (Located String)
+  | BinOp Op (Located Expr) (Located Expr)  -- Keep position of whole expression
+  | Call (Located String) [Expr]
   deriving (Show, Eq)
 
 -- | Supported types
@@ -52,3 +54,10 @@ data Op
   | Eq | Neq | Lt | Gt | Le | Ge
   | And | Or
   deriving (Show, Eq)
+
+-- Security
+data Located a
+    = Located {
+        pos :: SourcePos,
+        value :: a
+    } deriving (Show, Eq)
