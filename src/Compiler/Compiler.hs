@@ -5,10 +5,20 @@ import AST.AST
 import qualified Language.Wasm.Structure as Wasm
 import qualified Data.Text.Lazy as T -- Idk i think it's like a cast since i returned string but expected text
 import Numeric.Natural (Natural) -- WebAssembly needs a absolute val, no potential negatives so no ints pretty much
+import qualified Data.Map as Map
+
+-- Maps variable names to their local indices in WebAssembly
+type VarTable = Map.Map String Natural
 
 -- TODO: Will assemble complete module with types, functions, and exports
 astToWasm :: Program -> Wasm.Module
 astToWasm _program = Wasm.emptyModule -- DONT FORGET TO REMOVE '_' FROM program
+
+-- Creates a var table
+buildVarTable :: [Parameter] -> VarTable
+buildVarTable params =
+  Map.fromList $ zip (map paramName params) [0..] -- zip = ["x", "y", "z"] [0, 1, 2] -> [("x", 0), ("y", 1), ("z", 2)]
+--                                          [0..] dynamic inf list
 
 -- Basically formats each function to wasm
 makeFuncType :: Function -> Wasm.FuncType
