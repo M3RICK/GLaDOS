@@ -8,7 +8,6 @@ import AST.AST
 import Text.Megaparsec
 import Control.Monad (void)
 
-
 optionalSemi :: Parser ()
 optionalSemi = optional semi >> return ()
 
@@ -18,21 +17,21 @@ pStatement = choice
   , pWhile
   , pReturn
   , pDecl
-  , try pAssign  -- try because it starts like ExprStmt and ca casse sinon je crois
-  , pExprStmt    -- Must be last since its the most general
+  , try pAssign  -- try because it starts like ExprStmt
+  , pExprStmt    -- Must be last since it's the most general
   ]
 
 pDecl :: Parser Statement
 pDecl = do
   t <- pType
-  name <- pIdentifier
+  Located _ name <- pIdentifier  -- Extract string from Located
   initVal <- optional (symbol "=" *> pExpr)
   optionalSemi
   return (Decl t name initVal)
 
 pAssign :: Parser Statement
 pAssign = do
-  name <- pIdentifier
+  Located _ name <- pIdentifier  -- Extract string from Located
   void (symbol "=")
   expr <- pExpr
   optionalSemi
