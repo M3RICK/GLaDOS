@@ -30,7 +30,6 @@ pCall = do
   args <- parens (pExpr `sepBy` comma)
   return (Call name args)
 
-
 -- Operator precedence
 ------------------------------------------------------------
 
@@ -45,5 +44,10 @@ operatorTable =
   , [ binary "||" (BinOp Or) ]
   ]
 
-binary :: String -> (Expr -> Expr -> Expr) -> Operator Parser Expr
-binary name f = InfixL (f <$ try (symbol name))  -- Added try here
+-- Modified binary operator to handle Located values
+binary :: String -> (Located Expr -> Located Expr -> Expr) -> Operator Parser Expr
+binary name f = InfixL $ do
+  void (try (symbol name))
+  pos <- getSourcePos  -- on choppe la position quand on detecte un op
+  return $ \e1 e2 ->
+        f (Located pos e1) (Located pos e2)
