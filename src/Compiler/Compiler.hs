@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Compiler.Compiler (astToWasm, makeFuncType, makeExport, compileFunc, compileExpr) where
+module Compiler.Compiler (astToWasm, makeFuncType, makeExport, compileFunc, compileExpr, buildVarTable, VarTable) where
 
 import AST.AST
 import qualified Language.Wasm.Structure as Wasm
