@@ -1,7 +1,7 @@
-resolver: lts-22.6
+resolver: lts-18.28
 
 packages:
   - .
 
 extra-deps:
-  - megaparsec-9.7.0@sha256:77e331b4240385974e68d1f8d5ca9014274983cc9ccb8caced743d360c3a409f,3407
+- wasm-1.1.1
