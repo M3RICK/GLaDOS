@@ -24,6 +24,10 @@ formatError (ReturnTypeMismatch exp got pos) =
   formatReturnTypeMismatch exp got pos
 formatError (UninitializedVar name pos) =
   formatUninitializedVar name pos
+formatError (MissingReturn name) =
+  formatMissingReturn name
+formatError (DivisionByZero pos) =
+  "Division by zero at " ++ show pos
 
 -- Message error formatters
 formatUndefinedVar :: String -> SourcePos -> String
@@ -56,6 +60,11 @@ formatReturnTypeMismatch exp got pos =
 formatUninitializedVar :: String -> SourcePos -> String
 formatUninitializedVar name pos =
   "Variable '" ++ name ++ "' used before initialization at " ++ show pos
+
+formatMissingReturn :: String -> String
+formatMissingReturn name =
+  "Function '" ++ name ++ "' must return a value on all code paths"
+
 
 -- On affiche ca pour que ce soit joli
 showType :: Type -> String
