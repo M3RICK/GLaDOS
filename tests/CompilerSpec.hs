@@ -290,3 +290,138 @@ spec = do
             let innerCall = Call (loc "inner") [NumLit (loc 5)]
             let result = compileExpr funcTable emptyVarTable (Call (loc "outer") [innerCall])
             result `shouldBe` [Wasm.I64Const 5, Wasm.Call 0, Wasm.Call 1]
+
+
+-- ============================================================================
+-- collectDecls Tests
+-- ============================================================================
+
+    describe "collectDecls" $ do
+        it "collects no declarations from empty list" $ do
+            let result = collectDecls []
+            result `shouldBe` []
+
+        it "collects single declaration" $ do
+            let result = collectDecls [Decl TypeInt "x" Nothing]
+            result `shouldBe` [("x", TypeInt)]
+
+        it "collects multiple declarations" $ do
+            let stmts = [Decl TypeInt "x" Nothing, Decl TypeBool "y" Nothing, Decl TypeInt "z" Nothing]
+            let result = collectDecls stmts
+            result `shouldBe` [("x", TypeInt), ("y", TypeBool), ("z", TypeInt)]
+
+        it "collects declarations from nested if statements" $ do
+            let stmts = [If (BoolLit (loc True)) [Decl TypeInt "a" Nothing] Nothing]
+            let result = collectDecls stmts
+            result `shouldBe` [("a", TypeInt)]
+
+        it "collects declarations from nested while loops" $ do
+            let stmts = [While (BoolLit (loc True)) [Decl TypeInt "counter" Nothing]]
+            let result = collectDecls stmts
+            result `shouldBe` [("counter", TypeInt)]
+
+        it "ignores non-declaration statements" $ do
+            let stmts = [Return (NumLit (loc 42)), Assign "x" (NumLit (loc 5))]
+            let result = collectDecls stmts
+            result `shouldBe` []
+
+
+-- ============================================================================
+-- Statement Compilation Tests
+-- ============================================================================
+
+    describe "compileStatement - Decl" $ do
+        it "compiles declaration without initializer" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let result = compileStatement emptyFuncTable varTable (Decl TypeInt "x" Nothing)
+            result `shouldBe` []
+
+        it "compiles declaration with literal initializer" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let result = compileStatement emptyFuncTable varTable (Decl TypeInt "x" (Just (NumLit (loc 42))))
+            result `shouldBe` [Wasm.I64Const 42, Wasm.SetLocal 0]
+
+        it "compiles declaration with expression initializer" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let initExpr = BinOp Add (loc (NumLit (loc 10))) (loc (NumLit (loc 20)))
+            let result = compileStatement emptyFuncTable varTable (Decl TypeInt "x" (Just initExpr))
+            result `shouldBe` [Wasm.I64Const 10, Wasm.I64Const 20, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.SetLocal 0]
+
+
+    describe "compileStatement - Assign" $ do
+        it "compiles assignment with literal" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let result = compileStatement emptyFuncTable varTable (Assign "x" (NumLit (loc 100)))
+            result `shouldBe` [Wasm.I64Const 100, Wasm.SetLocal 0]
+
+        it "compiles assignment with expression" $ do
+            let varTable = Map.fromList [("x", 0), ("y", 1)]
+            let expr = BinOp Mul (loc (Var (loc "y"))) (loc (NumLit (loc 2)))
+            let result = compileStatement emptyFuncTable varTable (Assign "x" expr)
+            result `shouldBe` [Wasm.GetLocal 1, Wasm.I64Const 2, Wasm.IBinOp Wasm.BS64 Wasm.IMul, Wasm.SetLocal 0]
+
+
+    describe "compileStatement - ExprStmt" $ do
+        it "compiles expression statement and drops result" $ do
+            let funcTable = Map.fromList [("print", 0)]
+            let result = compileStatement funcTable emptyVarTable (ExprStmt (Call (loc "print") [NumLit (loc 42)]))
+            result `shouldBe` [Wasm.I64Const 42, Wasm.Call 0, Wasm.Drop]
+
+
+    describe "compileStatement - If" $ do
+        it "compiles if statement without else" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let ifStmt = If (BoolLit (loc True)) [Assign "x" (NumLit (loc 1))] Nothing
+            let result = compileStatement emptyFuncTable varTable ifStmt
+            result `shouldBe` [Wasm.I32Const 1, Wasm.If (Wasm.Inline Nothing) [Wasm.I64Const 1, Wasm.SetLocal 0] []]
+
+        it "compiles if statement with else" $ do
+            let varTable = Map.fromList [("x", 0)]
+            let ifStmt = If (BoolLit (loc False)) [Assign "x" (NumLit (loc 1))] (Just [Assign "x" (NumLit (loc 2))])
+            let result = compileStatement emptyFuncTable varTable ifStmt
+            result `shouldBe` [Wasm.I32Const 0, Wasm.If (Wasm.Inline Nothing) [Wasm.I64Const 1, Wasm.SetLocal 0] [Wasm.I64Const 2, Wasm.SetLocal 0]]
+
+
+    describe "compileStatement - While" $ do
+        it "compiles while loop" $ do
+            let varTable = Map.fromList [("i", 0)]
+            let condition = BinOp Lt (loc (Var (loc "i"))) (loc (NumLit (loc 10)))
+            let body = [Assign "i" (BinOp Add (loc (Var (loc "i"))) (loc (NumLit (loc 1))))]
+            let whileStmt = While condition body
+            let result = compileStatement emptyFuncTable varTable whileStmt
+            let expectedLoop = [Wasm.GetLocal 0, Wasm.I64Const 10, Wasm.IRelOp Wasm.BS64 Wasm.ILtS,
+                               Wasm.If (Wasm.Inline Nothing)
+                                 [Wasm.GetLocal 0, Wasm.I64Const 1, Wasm.IBinOp Wasm.BS64 Wasm.IAdd, Wasm.SetLocal 0, Wasm.Br 1]
+                                 [Wasm.Br 0]]
+            result `shouldBe` [Wasm.Block (Wasm.Inline Nothing) [Wasm.Loop (Wasm.Inline Nothing) expectedLoop]]
+
+
+-- ============================================================================
+-- Integration Tests with compileFunc
+-- ============================================================================
+
+    describe "compileFunc with local variables" $ do
+        it "compiles function with local variable declaration" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "test"
+                    , fParams = []
+                    , fBody = [ Decl TypeInt "x" (Just (NumLit (loc 42)))
+                              , Return (Var (loc "x"))
+                              ]
+                    }
+            let Wasm.Function _ localTypes resultBody = compileFunc emptyFuncTable 0 func
+            localTypes `shouldBe` [Wasm.I64]
+            resultBody `shouldBe` [Wasm.I64Const 42, Wasm.SetLocal 0, Wasm.GetLocal 0, Wasm.Return]
+
+        it "compiles function with parameters and locals" $ do
+            let func = Function
+                    { fType = TypeInt
+                    , fName = "add_and_square"
+                    , fParams = [Parameter TypeInt "a", Parameter TypeInt "b"]
+                    , fBody = [ Decl TypeInt "sum" (Just (BinOp Add (loc (Var (loc "a"))) (loc (Var (loc "b")))))
+                              , Return (BinOp Mul (loc (Var (loc "sum"))) (loc (Var (loc "sum"))))
+                              ]
+                    }
+            let Wasm.Function _ localTypes _ = compileFunc emptyFuncTable 0 func
+            localTypes `shouldBe` [Wasm.I64]
