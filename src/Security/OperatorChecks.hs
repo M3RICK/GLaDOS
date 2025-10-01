@@ -13,7 +13,7 @@ getOperatorChecker op = case op of
   Add -> arithmeticOp TypeInt
   Sub -> arithmeticOp TypeInt
   Mul -> arithmeticOp TypeInt
-  Div -> arithmeticOp TypeInt
+  Div -> divisionOp TypeInt
   Lt  -> comparisonOp TypeBool
   Gt  -> comparisonOp TypeBool
   Le  -> comparisonOp TypeBool
@@ -55,3 +55,15 @@ requireType expected expr getType context = do
   if actual == expected
     then Right ()
     else Left (TypeMismatch expected actual (getExprPos expr) context)
+
+-- Check if expression is literal zero
+checkNotZero :: Expr -> Either TypeError ()
+checkNotZero (NumLit (Located pos 0)) = Left (DivisionByZero pos)
+checkNotZero _ = Right ()
+
+divisionOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+divisionOp resultType env e1 e2 getType = do
+  requireType TypeInt e1 getType "in division"
+  requireType TypeInt e2 getType "in division"
+  checkNotZero e2
+  return resultType
