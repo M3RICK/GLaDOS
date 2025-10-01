@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Compiler.Compiler (astToWasm, makeFuncType, makeExport ,compileFunc) where
+module Compiler.Compiler (astToWasm, makeFuncType, makeExport, compileFunc, compileExpr) where
 
 import AST.AST
 import qualified Language.Wasm.Structure as Wasm
