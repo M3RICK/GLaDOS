@@ -5,8 +5,8 @@ import VM.HelperFunc
 import VM.InstructionHandlers
 
 -- The Pâté Carrefour (Main dispatcher)
-executeInstruction :: Instruction -> VMState -> VMResult VMState
-executeInstruction instr state = case instr of
+executeInstruction :: IRProgram -> Instruction -> VMState -> VMResult VMState
+executeInstruction program instr state = case instr of
     PushInt _ -> executeStackOp instr state
     PushBool _ -> executeStackOp instr state
     Pop -> executeStackOp instr state
@@ -24,11 +24,11 @@ executeInstruction instr state = case instr of
     GeInt -> executeCompOp instr state
     AndBool -> executeLogicOp instr state
     OrBool -> executeLogicOp instr state
-    Jump _ -> executeControlFlow instr state
-    JumpIfFalse _ -> executeControlFlow instr state
-    Call _ -> executeControlFlow instr state
-    Return -> executeControlFlow instr state
-    Halt -> executeControlFlow instr state
+    Jump _ -> executeControlFlow execute program instr state
+    JumpIfFalse _ -> executeControlFlow execute program instr state
+    Call _ -> executeControlFlow execute program instr state
+    Return -> executeControlFlow execute program instr state
+    Halt -> executeControlFlow execute program instr state
 
 -- Main execution loop should hopefully run a function until Halt or error
 execute :: IRProgram -> Int -> [Value] -> VMResult Value
@@ -45,13 +45,6 @@ execute program funcIdx args =
                 }
             in runLoop program funcIdx func initialState
 
--- Self explanatory
-getFunctionAt :: IRProgram -> Int -> VMResult CompiledFunction
-getFunctionAt program idx
-    | idx < 0 = Left $ "Invalid function index: " ++ show idx ++ " (negative)"
-    | idx >= length (functions program) = Left $ "Function index out of bounds: " ++ show idx
-    | otherwise = Right (functions program !! idx)
-
 -- The main loop: fetch, execute, increment PC, repeat
 runLoop :: IRProgram -> Int -> CompiledFunction -> VMState -> VMResult Value
 runLoop program funcIdx func state
@@ -60,12 +53,15 @@ runLoop program funcIdx func state
     | otherwise =
         let instruction = code func !! pc state
             oldPC = pc state
-        in case executeInstruction instruction state of
+        in case executeInstruction program instruction state of
             Left err -> Left err
             Right newState ->
                 case instruction of
                     Halt -> case stack newState of
                         [] -> Left "Program halted with empty stack"
+                        (result:_) -> Right result
+                    Return -> case stack newState of
+                        [] -> Left "Return with empty stack"
                         (result:_) -> Right result
                     _ -> if pc newState == oldPC
                          then runLoop program funcIdx func (newState {pc = pc newState + 1})

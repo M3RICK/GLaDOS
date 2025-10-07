@@ -3,6 +3,7 @@ module VM.HelperFunc where
 import IR.Types
 type VMError = String -- error msg string
 type VMResult a = Either VMError a
+type VMExecutor = IRProgram -> Int -> [Value] -> VMResult Value -- Function that executes IR code
 
 -- runtime state
 data VMState = VMState
@@ -88,3 +89,10 @@ binaryBoolOp op state =
         Right (b, state1) -> case popBool state1 of
             Left err -> Left err
             Right (a, state2) -> Right (push (VBool (a `op` b)) state2)
+
+-- Pop multiple vals (for function arguments)
+popNValues :: Int -> [Value] -> VMState -> VMResult ([Value], VMState)
+popNValues 0 acc state = Right (acc, state)
+popNValues n acc state = case pop state of
+    Left err -> Left err
+    Right (val, newState) -> popNValues (n - 1) (val : acc) newState

@@ -59,16 +59,35 @@ executeLogicOp instr state = case instr of
     _ -> Left "Internal error: not a logical operation"
 
 -- Flow op
-executeControlFlow :: Instruction -> VMState -> VMResult VMState
-executeControlFlow instr state = case instr of
-    Jump addr -> Right (state {pc = addr})
-    JumpIfFalse addr -> case popBool state of
+-- VMExecutor is a alias is Helper dummy
+executeControlFlow :: VMExecutor -> IRProgram -> Instruction -> VMState -> VMResult VMState
+executeControlFlow _ _ (Jump addr) state = Right (state {pc = addr})
+executeControlFlow _ _ (JumpIfFalse addr) state = case popBool state of
+    Left err -> Left err
+    Right (condition, newState) ->
+        if condition
+        then Right newState
+        else Right (newState {pc = addr})
+executeControlFlow executeFunc program (Call funcIdx) state =
+    case getFunctionAt program funcIdx of
         Left err -> Left err
-        Right (condition, newState) ->
-            if condition
-            then Right newState
-            else Right (newState {pc = addr})
-    Call _funcIdx -> Left "Call instruction not yet implemented"
-    Return -> Left "Return instruction not yet implemented"
-    Halt -> Right state
-    _ -> Left "Internal error: not a control flow operation"
+        Right targetFunc ->
+            let argCount = paramCount targetFunc
+            in case popNValues argCount [] state of
+                Left err -> Left err
+                Right (args, stateAfterPop) ->
+                    case executeFunc program funcIdx args of
+                        Left err -> Left err
+                        Right result ->
+                            Right $ push result stateAfterPop
+executeControlFlow _ _ Return state = Right state
+executeControlFlow _ _ Halt state = Right state
+executeControlFlow _ _ _ _ = Left "Internal error: not a control flow operation"
+
+-- Helper to get function from program
+-- Had to move him back here because of circular import error thingy
+getFunctionAt :: IRProgram -> Int -> VMResult CompiledFunction
+getFunctionAt program idx
+    | idx < 0 = Left $ "Invalid function index: " ++ show idx ++ " (negative)"
+    | idx >= length (functions program) = Left $ "Function index out of bounds: " ++ show idx
+    | otherwise = Right (functions program !! idx)
