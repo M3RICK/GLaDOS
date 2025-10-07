@@ -31,4 +31,3 @@ pop :: VMState -> VMResult (Value, VMState)
 pop state = case stack state of
     []     -> Left "Stack underflow: tried to pop from empty stack"
     (x:xs) -> Right (x, state {stack = xs})
-
