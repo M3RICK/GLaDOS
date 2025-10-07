@@ -7,6 +7,7 @@ import Control.Monad (void)
 import Text.Megaparsec
 import Control.Monad.Combinators.Expr
 import qualified Text.Megaparsec.Char.Lexer as L
+import Parser.FloatLit (pFloatLit)
 
 -- Expression parser
 ------------------------------------------------------------
@@ -17,11 +18,12 @@ pExpr = makeExprParser pTerm operatorTable
 -- | Parse atomic expressions
 pTerm :: Parser Expr
 pTerm =
-      (BoolLit <$> pBool)          -- true/false
-  <|> (NumLit <$> pNumber)         -- numbers
-  <|> try pCall                    -- function call
-  <|> (Var <$> pIdentifier)        -- variable
-  <|> parens pExpr                 -- parenthesized expression
+      pFloatLit
+  <|> (BoolLit <$> pBool)           -- true/false
+  <|> (NumLit  <$> pNumber)         -- integers
+  <|> try pCall                     -- function call
+  <|> (Var <$> pIdentifier)         -- variable
+  <|> parens pExpr                  -- parenthesized expression
 
 -- | Parse function calls
 pCall :: Parser Expr
@@ -39,7 +41,7 @@ operatorTable =
   , [ binary "+" (BinOp Add), binary "-" (BinOp Sub) ]
   , [ binary "<=" (BinOp Le), binary ">=" (BinOp Ge)
     , binary "==" (BinOp Eq), binary "!=" (BinOp Neq)
-    , binary "<" (BinOp Lt), binary ">" (BinOp Gt) ]
+    , binary "<" (BinOp Lt),  binary ">"  (BinOp Gt) ]
   , [ binary "&&" (BinOp And) ]
   , [ binary "||" (BinOp Or) ]
   ]
@@ -48,6 +50,6 @@ operatorTable =
 binary :: String -> (Located Expr -> Located Expr -> Expr) -> Operator Parser Expr
 binary name f = InfixL $ do
   void (try (symbol name))
-  pos <- getSourcePos  -- on choppe la position quand on detecte un op
+  pos <- getSourcePos  -- capture the operator position
   return $ \e1 e2 ->
-        f (Located pos e1) (Located pos e2)
+    f (Located pos e1) (Located pos e2)

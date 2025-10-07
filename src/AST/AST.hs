@@ -2,125 +2,63 @@ module AST.AST where
 
 import Text.Megaparsec.Pos (SourcePos)
 
--- | A whole program = list of functions
+-- Program
 data Program = Program [Function]
   deriving (Show, Eq)
 
--- | Function declaration
+-- Function
 data Function = Function
-  { fType       :: Type
-  , fName       :: String
-  , fParams     :: [Parameter]
-  , fBody       :: [Statement]
+  { fType   :: Type
+  , fName   :: String
+  , fParams :: [Parameter]
+  , fBody   :: [Statement]
   }
-  deriving (Show, Eq) -- temporaire va falloir creer un PrintAst :: AST -> String et aussi utiliser SourcePos de Megaparsec pour des beaux msg d erreurs
+  deriving (Show, Eq)
 
--- | Function parameter
+-- Parameter
 data Parameter = Parameter
   { paramType :: Type
   , paramName :: String
   }
   deriving (Show, Eq)
 
--- | Statements inside a function
+-- Statements
 data Statement
-  = Decl Type String (Maybe Expr)           -- int x; or int x = expr;
-  | Assign String Expr                      -- x = expr;
-  | If Expr [Statement] (Maybe [Statement]) -- if (...) { ... } else { ... }
-  | While Expr [Statement]                  -- while (...) { ... }
-  | Return Expr                             -- return expr;
-  | ExprStmt Expr                           -- e.g. function call as statement
+  = Decl Type String (Maybe Expr)
+  | Assign String Expr
+  | If Expr [Statement] (Maybe [Statement])
+  | While Expr [Statement]
+  | Return Expr
+  | ExprStmt Expr
   deriving (Show, Eq)
 
--- | Expressions
+-- Expressions
 data Expr
-  = BoolLit (Located Bool)
-  | NumLit (Located Int)
-  | Var (Located String)
-  | BinOp Op (Located Expr) (Located Expr)  -- Keep position of whole expression
-  | Call (Located String) [Expr]
+  = BoolLit  (Located Bool)
+  | NumLit   (Located Int)
+  | FloatLit (Located Double)
+  | Var      (Located String)
+  | BinOp    Op (Located Expr) (Located Expr)
+  | Call     (Located String) [Expr]
   deriving (Show, Eq)
 
--- | Supported types
+-- Types
 data Type
   = TypeInt
   | TypeBool
+  | TypeFloat
   | TypeVoid
   deriving (Show, Eq)
 
--- | Operators
+-- Operators
 data Op
   = Add | Sub | Mul | Div
   | Eq | Neq | Lt | Gt | Le | Ge
   | And | Or
   deriving (Show, Eq)
 
--- Security
-data Located a
-    = Located {
-        pos :: SourcePos,
-        value :: a
-    } deriving (Show, Eq)
-module AST.AST where
-
-import Text.Megaparsec.Pos (SourcePos)
-
--- | A whole program = list of functions
-data Program = Program [Function]
-  deriving (Show, Eq)
-
--- | Function declaration
-data Function = Function
-  { fType       :: Type
-  , fName       :: String
-  , fParams     :: [Parameter]
-  , fBody       :: [Statement]
-  }
-  deriving (Show, Eq) -- temporaire va falloir creer un PrintAst :: AST -> String et aussi utiliser SourcePos de Megaparsec pour des beaux msg d erreurs
-
--- | Function parameter
-data Parameter = Parameter
-  { paramType :: Type
-  , paramName :: String
-  }
-  deriving (Show, Eq)
-
--- | Statements inside a function
-data Statement
-  = Decl Type String (Maybe Expr)           -- int x; or int x = expr;
-  | Assign String Expr                      -- x = expr;
-  | If Expr [Statement] (Maybe [Statement]) -- if (...) { ... } else { ... }
-  | While Expr [Statement]                  -- while (...) { ... }
-  | Return Expr                             -- return expr;
-  | ExprStmt Expr                           -- e.g. function call as statement
-  deriving (Show, Eq)
-
--- | Expressions
-data Expr
-  = BoolLit (Located Bool)
-  | NumLit (Located Int)
-  | Var (Located String)
-  | BinOp Op (Located Expr) (Located Expr)  -- Keep position of whole expression
-  | Call (Located String) [Expr]
-  deriving (Show, Eq)
-
--- | Supported types
-data Type
-  = TypeInt
-  | TypeBool
-  | TypeVoid
-  deriving (Show, Eq)
-
--- | Operators
-data Op
-  = Add | Sub | Mul | Div
-  | Eq | Neq | Lt | Gt | Le | Ge
-  | And | Or
-  deriving (Show, Eq)
-
--- Security
-data Located a
-    = Located {
-        pos :: SourcePos,
-        value :: a
-    } deriving (Show, Eq)
+-- With source position
+data Located a = Located
+  { pos   :: SourcePos
+  , value :: a
+  } deriving (Show, Eq)

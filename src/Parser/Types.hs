@@ -1,12 +1,26 @@
 module Parser.Types where
 
-import Parser.Lexer
 import AST.AST
-import Text.Megaparsec
+import Parser.Lexer (Parser)
 
--- Type parser (used by both Function and Statement)
+import Text.Megaparsec (choice, notFollowedBy, try)
+import Text.Megaparsec.Char (alphaNumChar, space1)
+import qualified Text.Megaparsec.Char.Lexer as L
+import qualified Text.Megaparsec.Char as C
+
+-- local space consumer (kept here so we don't depend on Lexer exports)
+sc :: Parser ()
+sc = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
+
+-- reserved keyword with word boundary, then trailing space/comments
+reserved :: String -> Parser ()
+reserved w = L.lexeme sc (try (C.string w *> notFollowedBy alphaNumChar))
+
+-- Parse a type keyword
 pType :: Parser Type
-pType =
-      (TypeInt  <$ symbol "int")
-  <|> (TypeBool <$ symbol "bool")
-  <|> (TypeVoid <$ symbol "void")
+pType = choice
+  [ reserved "int"   >> pure TypeInt
+  , reserved "bool"  >> pure TypeBool
+  , reserved "void"  >> pure TypeVoid
+  , reserved "float" >> pure TypeFloat
+  ]

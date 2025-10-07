@@ -20,6 +20,7 @@ dependencies:
 - mtl
 - wasm
 - text
+- scientific >= 0.3 && < 0.4
 
 ghc-options:
   - -Wall
