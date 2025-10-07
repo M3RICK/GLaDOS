@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2025
+-- G-FUN-500-TLS-5-1-glados-2 [WSL: Ubuntu-22.04]
+-- File description:
+-- ParserSpec
+-}
+
 module ParserSpec (spec) where
 
 import Test.Hspec

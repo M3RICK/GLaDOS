@@ -1,5 +1,11 @@
+{-
+-- EPITECH PROJECT, 2025
+-- G-FUN-500-TLS-5-1-glados-2 [WSL: Ubuntu-22.04]
+-- File description:
+-- Parser
+-}
+
 -- Projet GLaDOS - Module Parser
--- Auteur : Copilot (Epitech style)
 -- Description : Parser complet basé sur grammar.bnf avec AST structuré
 -- Fonctionnalités : expressions, statements, fonctions, types int/bool
 

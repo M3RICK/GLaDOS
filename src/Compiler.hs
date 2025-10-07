@@ -1,5 +1,11 @@
--- Projet GLaDOS - Module Compiler  
--- Auteur : Copilot (Epitech style)
+{-
+-- EPITECH PROJECT, 2025
+-- G-FUN-500-TLS-5-1-glados-2 [WSL: Ubuntu-22.04]
+-- File description:
+-- Compiler
+-}
+
+-- Projet GLaDOS - Module Compiler
 -- Description : Compilateur AST vers bytecode pour la Virtual Machine
 -- Pipeline : Parser -> TypeChecker -> Compiler -> VirtualMachine
 

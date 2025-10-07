@@ -1,5 +1,11 @@
+{-
+-- EPITECH PROJECT, 2025
+-- G-FUN-500-TLS-5-1-glados-2 [WSL: Ubuntu-22.04]
+-- File description:
+-- TypeChecker
+-}
+
 -- Projet GLaDOS - Module TypeChecker
--- Auteur : Copilot (Epitech style)
 -- Description : Vérification de type statique pour le langage GLaDOS
 -- Fonctionnalités : type checking des expressions, statements, fonctions
 

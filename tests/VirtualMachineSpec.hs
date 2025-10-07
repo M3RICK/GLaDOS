@@ -1,5 +1,11 @@
+{-
+-- EPITECH PROJECT, 2025
+-- G-FUN-500-TLS-5-1-glados-2 [WSL: Ubuntu-22.04]
+-- File description:
+-- VirtualMachineSpec
+-}
+
 -- Tests unitaires pour la Virtual Machine
--- Auteur : Copilot (Epitech style)
 -- Description : Tests complets pour la VM stack-based
 
 module VirtualMachineSpec (spec) where
