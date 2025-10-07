@@ -3,21 +3,31 @@ module VM.Interpreter where
 import IR.Types
 import VM.HelperFunc
 
--- Execute a single instruction and update the VM state
-executeInstruction :: Instruction -> VMState -> VMResult VMState
-executeInstruction instr state = case instr of
-    PushInt n -> Right (push (VInt n) state) -- Stack interactions
+-- Stack management
+executeStackOp :: Instruction -> VMState -> VMResult VMState
+executeStackOp instr state = case instr of
+    PushInt n -> Right (push (VInt n) state)
     PushBool b -> Right (push (VBool b) state)
     Pop -> case pop state of
         Right (_, newState) -> Right newState
         Left err -> Left err
-    GetLocal idx -> case getLocal idx state of -- Local var edditting
+    _ -> Left "Internal error: not a stack operation"
+
+-- Local var interactuions
+executeVarOp :: Instruction -> VMState -> VMResult VMState
+executeVarOp instr state = case instr of
+    GetLocal idx -> case getLocal idx state of
         Right val -> Right (push val state)
         Left err -> Left err
     SetLocal idx -> case pop state of
         Right (val, newState) -> setLocal idx val newState
         Left err -> Left err
-    AddInt -> binaryIntOp (+) state -- Op with result push
+    _ -> Left "Internal error: not a variable operation"
+
+-- Math
+executeArithOp :: Instruction -> VMState -> VMResult VMState
+executeArithOp instr state = case instr of
+    AddInt -> binaryIntOp (+) state
     SubInt -> binaryIntOp (-) state
     MulInt -> binaryIntOp (*) state
     DivInt -> case popInt state of
@@ -28,21 +38,63 @@ executeInstruction instr state = case instr of
             else case popInt state1 of
                 Left err -> Left err
                 Right (a, state2) -> Right (push (VInt (a `div` b)) state2)
-    EqInt -> compareInts (==) state -- Comparison operations: pop 2 ints, compare, push bool
+    _ -> Left "Internal error: not an arithmetic operation"
+
+-- Comparaison
+executeCompOp :: Instruction -> VMState -> VMResult VMState
+executeCompOp instr state = case instr of
+    EqInt -> compareInts (==) state
     NeqInt -> compareInts (/=) state
     LtInt -> compareInts (<) state
     GtInt -> compareInts (>) state
     LeInt -> compareInts (<=) state
     GeInt -> compareInts (>=) state
-    AndBool -> binaryBoolOp (&&) state -- Logical operations: pop 2 bools, compute, push bool
+    _ -> Left "Internal error: not a comparison operation"
+
+-- &&/||
+executeLogicOp :: Instruction -> VMState -> VMResult VMState
+executeLogicOp instr state = case instr of
+    AndBool -> binaryBoolOp (&&) state
     OrBool -> binaryBoolOp (||) state
-    Jump addr -> Right (state {pc = addr}) -- Control flow operations
+    _ -> Left "Internal error: not a logical operation"
+
+-- Flow op
+executeControlFlow :: Instruction -> VMState -> VMResult VMState
+executeControlFlow instr state = case instr of
+    Jump addr -> Right (state {pc = addr})
     JumpIfFalse addr -> case popBool state of
         Left err -> Left err
         Right (condition, newState) ->
             if condition
-            then Right newState -- condition is true, don't jump (continue to next instruction)
-            else Right (newState {pc = addr}) -- condition is false, jump to addr
-    Call _funcIdx -> Left "Call instruction not yet implemented" -- Will implement with main execute loop
-    Return -> Left "Return instruction not yet implemented" -- Will implement with main execute loop
-    Halt -> Right state -- Halt doesn't change state, just signals to stop execution
+            then Right newState
+            else Right (newState {pc = addr})
+    Call _funcIdx -> Left "Call instruction not yet implemented"
+    Return -> Left "Return instruction not yet implemented"
+    Halt -> Right state
+    _ -> Left "Internal error: not a control flow operation"
+
+-- The Pâté Carrefour
+executeInstruction :: Instruction -> VMState -> VMResult VMState
+executeInstruction instr state = case instr of
+    PushInt _ -> executeStackOp instr state
+    PushBool _ -> executeStackOp instr state
+    Pop -> executeStackOp instr state
+    GetLocal _ -> executeVarOp instr state
+    SetLocal _ -> executeVarOp instr state
+    AddInt -> executeArithOp instr state
+    SubInt -> executeArithOp instr state
+    MulInt -> executeArithOp instr state
+    DivInt -> executeArithOp instr state
+    EqInt -> executeCompOp instr state
+    NeqInt -> executeCompOp instr state
+    LtInt -> executeCompOp instr state
+    GtInt -> executeCompOp instr state
+    LeInt -> executeCompOp instr state
+    GeInt -> executeCompOp instr state
+    AndBool -> executeLogicOp instr state
+    OrBool -> executeLogicOp instr state
+    Jump _ -> executeControlFlow instr state
+    JumpIfFalse _ -> executeControlFlow instr state
+    Call _ -> executeControlFlow instr state
+    Return -> executeControlFlow instr state
+    Halt -> executeControlFlow instr state
