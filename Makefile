@@ -1,6 +1,6 @@
 ##
 ## EPITECH PROJECT, 2024
-## IMAGE COMPRESSOR
+## GLADOS
 ## File description:
 ## Makefile
 ##
