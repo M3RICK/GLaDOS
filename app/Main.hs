@@ -16,13 +16,11 @@ import Compiler (compileAndRun)
 die :: String -> IO a
 die msg = hPutStrLn stderr msg >> exitWith (ExitFailure 84)
 
-main :: IO ()
-main = do
-	a <- getArgs
-	s <- case a of
-		[] -> getContents
-		[p] -> readFile p
-		_ -> die "Usage: ./glados [file]"
+usage :: IO a
+usage = die "Usage:\n  ./glados <source>\n  ./glados --help"
+
+runSource :: String -> IO ()
+runSource s =
 	case parseProgram s of
 		Left e -> die $ "[Parse Error] " <> show e
 		Right ast -> case ast of
@@ -32,3 +30,12 @@ main = do
 				Right v -> print v
 				Left er -> die $ "[Runtime/Compile Error] " <> show er
 			_ -> die "[Error] Empty/unsupported program"
+
+main :: IO ()
+main = do
+	a <- getArgs
+	case a of
+		["--help"] -> putStrLn "Usage:\n  ./glados <source>\n  ./glados --compile <source> -o <bytecode>\n  ./glados --run <bytecode>\n  ./glados --dump <bytecode>\n  ./glados --repl"
+		[] -> getContents >>= runSource
+		[p] -> readFile p >>= runSource
+		_ -> usage
