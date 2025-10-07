@@ -1,4 +1,4 @@
-module IR.Types where
+module IR.Types wherei
 
 -- | A complete compiled program
 data IRProgram = IRProgram
@@ -15,44 +15,44 @@ data CompiledFunction = CompiledFunction
   } deriving (Show, Eq)
 
 data Instruction
-  -- Stack operations: push values onto the stack
-  = PushInt Int              -- Push integer literal
-  | PushBool Bool            -- Push boolean literal
+  -- push values onto the stack
+  = PushInt Int
+  | PushBool Bool
 
-  -- Variable operations: work with local variables
-  | GetLocal Int             -- Load local variable N onto stack
-  | SetLocal Int             -- Store top of stack into local variable N
+  -- local variables
+  | GetLocal Int
+  | SetLocal Int
 
-  -- Arithmetic: pop two values, push result
-  | AddInt                   -- a + b
-  | SubInt                   -- a - b
-  | MulInt                   -- a * b
-  | DivInt                   -- a / b
+  -- Arithmetic
+  | AddInt
+  | SubInt
+  | MulInt
+  | DivInt
 
-  -- Comparison: pop two values, push bool result
-  | EqInt                    -- a == b
-  | NeqInt                   -- a != b
-  | LtInt                    -- a < b
-  | GtInt                    -- a > b
-  | LeInt                    -- a <= b
-  | GeInt                    -- a >= b
+  -- Comparison
+  | EqInt
+  | NeqInt
+  | LtInt
+  | GtInt
+  | LeInt
+  | GeInt
 
-  -- Logical: pop two bools, push bool result
-  | AndBool                  -- a && b
-  | OrBool                   -- a || b
+  -- Logical
+  | AndBool
+  | OrBool
 
   -- Control flow
-  | Jump Int                 -- Unconditional jump to instruction N
-  | JumpIfFalse Int          -- Jump to instruction N if top of stack is false
-  | Call Int                 -- Call function N
-  | Return                   -- Return from current function
+  | Jump Int
+  | JumpIfFalse Int
+  | Call Int
+  | Return
 
   -- Utility
-  | Pop                      -- Discard top of stack
-  | Halt                     -- End program
+  | Pop -- Discard top of stack
+  | Halt -- End program
   deriving (Show, Eq)
 
--- | Represents a value during compilation (for tracking types)
+-- value during compilation, for tracking purposes
 data Value
   = VInt Int
   | VBool Bool
