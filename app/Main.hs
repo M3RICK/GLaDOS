@@ -1,11 +1,33 @@
 module Main (main) where
 
+import System.Exit (exitWith, ExitCode(..))
+import System.IO (hPutStrLn, stderr)
+import Parser.Core (parseProgram)
+import Security.TypeChecker (checkProgram)
+import Compiler.Core (compileProgram)
+import VM.Interpreter (execute)
+import IR.Types (mainIndex)
+import Security.ErrorFormat (formatError)
+
 main :: IO ()
 main = do
-    putStrLn "spent 22 grand on a hooker, brought her home and that bitch a dick"
-    putStrLn "told her get out my house when she walked out my house"
-    putStrLn "i had noticed her booty was thick"
-    putStrLn "i was like naw nevermind you good"
-    putStrLn "i'm a lumberjack i can tolerate wood"
-    putStrLn "layed down then we played us some fortnite"
-    putStrLn "then we stripped down and we had a swordfight"
+    sourceCode <- getContents
+    case parseProgram sourceCode of
+        Left parseErr -> do
+            hPutStrLn stderr $ "Parse error: " ++ show parseErr
+            exitWith (ExitFailure 84)
+        Right ast ->
+            case checkProgram ast of
+                Left typeErrs -> do
+                    hPutStrLn stderr "Type errors:"
+                    mapM_ (hPutStrLn stderr . formatError) typeErrs
+                    exitWith (ExitFailure 84)
+                Right validatedAst -> do
+                    let irProgram = compileProgram validatedAst
+                    case execute irProgram (mainIndex irProgram) [] of
+                        Left runtimeErr -> do
+                            hPutStrLn stderr $ "Runtime error: " ++ runtimeErr
+                            exitWith (ExitFailure 84)
+                        Right result -> do
+                            print result
+                            exitWith ExitSuccess

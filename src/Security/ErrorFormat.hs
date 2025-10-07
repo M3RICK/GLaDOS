@@ -14,6 +14,10 @@ formatError (UndefinedVar name pos) =
   formatUndefinedVar name pos
 formatError (UndefinedFunc name pos) =
   formatUndefinedFunc name pos
+formatError (TypeMismatch exp got pos ctx) =
+  formatTypeMismatch exp got pos ctx
+formatError (AlreadyDefined name pos) =
+  formatAlreadyDefined name pos
 formatError (WrongArgCount name exp got pos) =
   formatWrongArgCount name exp got pos
 formatError (ReturnTypeMismatch exp got pos) =
