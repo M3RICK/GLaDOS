@@ -1,6 +1,7 @@
 module VMSpec (spec) where
 
 import Test.Hspec
+import VM.HelperFunc
 import VM.Interpreter
 import IR.Types
 
@@ -325,3 +326,133 @@ spec = do
                 case binaryBoolOp (&&) state of
                     Left err -> err `shouldContain` "Type error"
                     Right _ -> expectationFailure "Expected type error"
+
+    describe "executeInstruction" $ do
+
+        describe "Stack Operations" $ do
+            it "executes PushInt" $ do
+                let state = VMState {stack = [], locals = [], pc = 0, callStack = []}
+                case executeInstruction (PushInt 42) state of
+                    Right newState -> stack newState `shouldBe` [VInt 42]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes PushBool" $ do
+                let state = VMState {stack = [], locals = [], pc = 0, callStack = []}
+                case executeInstruction (PushBool True) state of
+                    Right newState -> stack newState `shouldBe` [VBool True]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes Pop" $ do
+                let state = VMState {stack = [VInt 42, VInt 10], locals = [], pc = 0, callStack = []}
+                case executeInstruction Pop state of
+                    Right newState -> stack newState `shouldBe` [VInt 10]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        describe "Variable Operations" $ do
+            it "executes GetLocal" $ do
+                let state = VMState {stack = [], locals = [VInt 99, VBool False], pc = 0, callStack = []}
+                case executeInstruction (GetLocal 0) state of
+                    Right newState -> stack newState `shouldBe` [VInt 99]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes SetLocal" $ do
+                let state = VMState {stack = [VInt 77], locals = [VInt 0, VInt 0], pc = 0, callStack = []}
+                case executeInstruction (SetLocal 1) state of
+                    Right newState -> do
+                        locals newState `shouldBe` [VInt 0, VInt 77]
+                        stack newState `shouldBe` []  -- value was popped
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        describe "Arithmetic Operations" $ do
+            it "executes AddInt" $ do
+                let state = VMState {stack = [VInt 3, VInt 5], locals = [], pc = 0, callStack = []}
+                case executeInstruction AddInt state of
+                    Right newState -> stack newState `shouldBe` [VInt 8]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes SubInt" $ do
+                let state = VMState {stack = [VInt 3, VInt 10], locals = [], pc = 0, callStack = []}
+                case executeInstruction SubInt state of
+                    Right newState -> stack newState `shouldBe` [VInt 7]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes MulInt" $ do
+                let state = VMState {stack = [VInt 4, VInt 7], locals = [], pc = 0, callStack = []}
+                case executeInstruction MulInt state of
+                    Right newState -> stack newState `shouldBe` [VInt 28]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes DivInt" $ do
+                let state = VMState {stack = [VInt 3, VInt 15], locals = [], pc = 0, callStack = []}
+                case executeInstruction DivInt state of
+                    Right newState -> stack newState `shouldBe` [VInt 5]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "returns error on division by zero" $ do
+                let state = VMState {stack = [VInt 0, VInt 10], locals = [], pc = 0, callStack = []}
+                case executeInstruction DivInt state of
+                    Left err -> err `shouldContain` "Division by zero"
+                    Right _ -> expectationFailure "Expected division by zero error"
+
+        describe "Comparison Operations" $ do
+            it "executes EqInt (true)" $ do
+                let state = VMState {stack = [VInt 5, VInt 5], locals = [], pc = 0, callStack = []}
+                case executeInstruction EqInt state of
+                    Right newState -> stack newState `shouldBe` [VBool True]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes EqInt (false)" $ do
+                let state = VMState {stack = [VInt 3, VInt 5], locals = [], pc = 0, callStack = []}
+                case executeInstruction EqInt state of
+                    Right newState -> stack newState `shouldBe` [VBool False]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes LtInt" $ do
+                let state = VMState {stack = [VInt 7, VInt 5], locals = [], pc = 0, callStack = []}
+                case executeInstruction LtInt state of
+                    Right newState -> stack newState `shouldBe` [VBool True]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        describe "Logical Operations" $ do
+            it "executes AndBool (true && false)" $ do
+                let state = VMState {stack = [VBool False, VBool True], locals = [], pc = 0, callStack = []}
+                case executeInstruction AndBool state of
+                    Right newState -> stack newState `shouldBe` [VBool False]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes OrBool (true || false)" $ do
+                let state = VMState {stack = [VBool False, VBool True], locals = [], pc = 0, callStack = []}
+                case executeInstruction OrBool state of
+                    Right newState -> stack newState `shouldBe` [VBool True]
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        describe "Control Flow Operations" $ do
+            it "executes Jump" $ do
+                let state = VMState {stack = [], locals = [], pc = 5, callStack = []}
+                case executeInstruction (Jump 10) state of
+                    Right newState -> pc newState `shouldBe` 10
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes JumpIfFalse (condition is false, should jump)" $ do
+                let state = VMState {stack = [VBool False], locals = [], pc = 5, callStack = []}
+                case executeInstruction (JumpIfFalse 20) state of
+                    Right newState -> do
+                        pc newState `shouldBe` 20
+                        stack newState `shouldBe` []  -- bool was popped
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes JumpIfFalse (condition is true, should not jump)" $ do
+                let state = VMState {stack = [VBool True], locals = [], pc = 5, callStack = []}
+                case executeInstruction (JumpIfFalse 20) state of
+                    Right newState -> do
+                        pc newState `shouldBe` 5  -- PC unchanged
+                        stack newState `shouldBe` []  -- bool was popped
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+            it "executes Halt" $ do
+                let state = VMState {stack = [VInt 42], locals = [], pc = 10, callStack = []}
+                case executeInstruction Halt state of
+                    Right newState -> do
+                        stack newState `shouldBe` [VInt 42]
+                        pc newState `shouldBe` 10
+                    Left err -> expectationFailure $ "Unexpected error: " ++ err

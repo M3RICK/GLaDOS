@@ -28,7 +28,7 @@ push val state = state {stack = val : stack state}
 -- Pop a value from the stack (returns error if empty)
 pop :: VMState -> VMResult (Value, VMState)
 pop state = case stack state of
-    []     -> Left "Stack underflow: tried to pop from empty stack"
+    [] -> Left "Stack underflow: tried to pop from empty stack"
     (x:xs) -> Right (x, state {stack = xs})
 
 -- Get a local variable by index
