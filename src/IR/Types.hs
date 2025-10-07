@@ -1,4 +1,4 @@
-module IR.Types wherei
+module IR.Types where
 
 -- | A complete compiled program
 data IRProgram = IRProgram

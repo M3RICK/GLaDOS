@@ -13,14 +13,13 @@ description: Please see the README on GitHub at <https://github.com/yourusername
 
 dependencies:
 - base >= 4.7 && < 5
-- parsec >= 3.1.0
-# - megaparsec >= 9.0.0
-- megaparsec >= 9.7.0
+- megaparsec
 - parser-combinators
 - containers
 - mtl
-- wasm
 - text
+- bytestring
+- binary
 
 ghc-options:
   - -Wall
