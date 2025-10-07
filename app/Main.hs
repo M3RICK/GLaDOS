@@ -7,18 +7,28 @@
 
 module Main (main) where
 
+import System.Environment (getArgs)
+import System.Exit (exitWith, ExitCode(..))
+import System.IO (hPutStrLn, stderr)
 import Parser (parseProgram, AST(..))
 import Compiler (compileAndRun)
 
+die :: String -> IO a
+die msg = hPutStrLn stderr msg >> exitWith (ExitFailure 84)
+
 main :: IO ()
 main = do
-    input <- getLine
-    case parseProgram input of
-        Left _ -> return ()
-        Right ast -> case ast of
-            ASTInt n -> print n
-            ASTBool b -> print b
-            ASTExpression expr -> case compileAndRun expr of
-                Right result -> print result
-                Left _ -> return ()
-            _ -> return ()
+	a <- getArgs
+	s <- case a of
+		[] -> getContents
+		[p] -> readFile p
+		_ -> die "Usage: ./glados [file]"
+	case parseProgram s of
+		Left e -> die $ "[Parse Error] " <> show e
+		Right ast -> case ast of
+			ASTInt n -> print n
+			ASTBool b -> print b
+			ASTExpression e -> case compileAndRun e of
+				Right v -> print v
+				Left er -> die $ "[Runtime/Compile Error] " <> show er
+			_ -> die "[Error] Empty/unsupported program"
