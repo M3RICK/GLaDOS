@@ -29,3 +29,44 @@ executeInstruction instr state = case instr of
     Call _ -> executeControlFlow instr state
     Return -> executeControlFlow instr state
     Halt -> executeControlFlow instr state
+
+-- Main execution loop should hopefully run a function until Halt or error
+execute :: IRProgram -> Int -> [Value] -> VMResult Value
+execute program funcIdx args =
+    case getFunctionAt program funcIdx of
+        Left err -> Left err
+        Right func ->
+            let initialLocals = args ++ replicate (localVarCount func - length args) (VInt 0)
+                initialState = VMState {
+                    stack = [],
+                    locals = initialLocals,
+                    pc = 0,
+                    callStack = []
+                }
+            in runLoop program funcIdx func initialState
+
+-- Self explanatory
+getFunctionAt :: IRProgram -> Int -> VMResult CompiledFunction
+getFunctionAt program idx
+    | idx < 0 = Left $ "Invalid function index: " ++ show idx ++ " (negative)"
+    | idx >= length (functions program) = Left $ "Function index out of bounds: " ++ show idx
+    | otherwise = Right (functions program !! idx)
+
+-- The main loop: fetch, execute, increment PC, repeat
+runLoop :: IRProgram -> Int -> CompiledFunction -> VMState -> VMResult Value
+runLoop program funcIdx func state
+    | pc state < 0 = Left "PC became negative"
+    | pc state >= length (code func) = Left "PC out of bounds"
+    | otherwise =
+        let instruction = code func !! pc state
+            oldPC = pc state
+        in case executeInstruction instruction state of
+            Left err -> Left err
+            Right newState ->
+                case instruction of
+                    Halt -> case stack newState of
+                        [] -> Left "Program halted with empty stack"
+                        (result:_) -> Right result
+                    _ -> if pc newState == oldPC
+                         then runLoop program funcIdx func (newState {pc = pc newState + 1})
+                         else runLoop program funcIdx func newState

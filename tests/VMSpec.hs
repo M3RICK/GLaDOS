@@ -456,3 +456,89 @@ spec = do
                         stack newState `shouldBe` [VInt 42]
                         pc newState `shouldBe` 10
                     Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+    describe "execute (main loop)" $ do
+
+        it "executes a simple program: 5 + 3" $ do
+            let func = CompiledFunction {
+                funcName = "main",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushInt 5, PushInt 3, AddInt, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Right result -> result `shouldBe` VInt 8
+                Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        it "executes with local variables" $ do
+            let func = CompiledFunction {
+                funcName = "test",
+                paramCount = 2,
+                localVarCount = 3,
+                code = [GetLocal 0, GetLocal 1, AddInt, SetLocal 2, GetLocal 2, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [VInt 10, VInt 20] of
+                Right result -> result `shouldBe` VInt 30
+                Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        it "executes with Jump" $ do
+            let func = CompiledFunction {
+                funcName = "jump_test",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushInt 1, Jump 3, PushInt 999, PushInt 2, AddInt, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Right result -> result `shouldBe` VInt 3
+                Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        it "executes JumpIfFalse (true, don't jump)" $ do
+            let func = CompiledFunction {
+                funcName = "if_test",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushBool True, JumpIfFalse 4, PushInt 42, Jump 5, PushInt 999, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Right result -> result `shouldBe` VInt 42
+                Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        it "executes JumpIfFalse (false, do jump)" $ do
+            let func = CompiledFunction {
+                funcName = "if_test2",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushBool False, JumpIfFalse 4, PushInt 999, Jump 5, PushInt 100, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Right result -> result `shouldBe` VInt 100
+                Left err -> expectationFailure $ "Unexpected error: " ++ err
+
+        it "returns error on division by zero" $ do
+            let func = CompiledFunction {
+                funcName = "div_zero",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushInt 10, PushInt 0, DivInt, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Left err -> err `shouldContain` "Division by zero"
+                Right _ -> expectationFailure "Expected division by zero error"
+
+        it "returns error when halting with empty stack" $ do
+            let func = CompiledFunction {
+                funcName = "empty_halt",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            case execute program 0 [] of
+                Left err -> err `shouldContain` "empty stack"
+                Right _ -> expectationFailure "Expected empty stack error"
