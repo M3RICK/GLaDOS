@@ -3,7 +3,7 @@ module IR.Types where
 -- | A complete compiled program
 data IRProgram = IRProgram
   { functions :: [CompiledFunction]
-  , mainIndex :: Int  -- Which function is main?
+  , mainIndex :: Int  -- Il est ou le main fredo ?
   } deriving (Show, Eq)
 
 -- | A single compiled function
@@ -14,7 +14,6 @@ data CompiledFunction = CompiledFunction
   , code :: [Instruction]     -- The actual instructions
   } deriving (Show, Eq)
 
--- | Our instruction set - every operation your language can do
 data Instruction
   -- Stack operations: push values onto the stack
   = PushInt Int              -- Push integer literal
