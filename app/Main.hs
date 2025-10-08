@@ -43,9 +43,9 @@ compileFile src out = do
 
 runBytecode :: FilePath -> IO ()
 runBytecode p = do
-	content <- readFile p
+	_ <- readFile p
 	putStrLn $ "Running bytecode from " <> p
-	putStrLn "42"  -- fake aussi pour l'outpout
+	putStrLn "42"  -- fake aussi pour l'output
 
 main :: IO ()
 main = do
