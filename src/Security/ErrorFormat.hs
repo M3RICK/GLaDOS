@@ -65,6 +65,7 @@ formatMissingReturn name =
 -- On affiche ca pour que ce soit joli
 showType :: Type -> String
 showType TypeInt = "int"
+showType TypeFloat = "float"
 showType TypeBool = "bool"
 showType TypeVoid = "void"
 showType TypeInfer = "var"
