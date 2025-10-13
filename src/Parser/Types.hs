@@ -10,3 +10,4 @@ pType =
       (TypeInt  <$ symbol "int")
   <|> (TypeBool <$ symbol "bool")
   <|> (TypeVoid <$ symbol "void")
+  <|> (TypeInfer <$ symbol "var")
