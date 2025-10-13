@@ -12,6 +12,7 @@ compileStatement funcTable varTable stmt = case stmt of
   Assign name expr -> compileAssign funcTable varTable name expr
   If cond thenBody elseBody -> compileIf funcTable varTable cond thenBody elseBody
   While cond body -> compileWhile funcTable varTable cond body
+  For init cond update body -> compileFor funcTable varTable init cond update body
   Return expr -> compileReturn funcTable varTable expr
   ExprStmt expr -> compileExprStmt funcTable varTable expr
 
@@ -91,12 +92,12 @@ compileWhile funcTable varTable cond body =
 calculateJumpToLoopEnd :: [IR.Instruction] -> Int
 calculateJumpToLoopEnd bodyCode = length bodyCode + 2
 
--- | Calcule combien d etapes il doit revenir en arriere
+-- Calcule combien d etapes il doit revenir en arriere
 calculateJumpBackToLoopStart :: [IR.Instruction] -> [IR.Instruction] -> Int
 calculateJumpBackToLoopStart conditionCode bodyCode =
   negate totalLoopSize  -- Retourne a la condition
   where
-    totalLoopSize = length conditionCode + 1 + length bodyCode + 1
+    totalLoopSize = length conditionCode + 1 + length bodyCode
 
 -- return statement
 compileReturn :: FuncTable -> VarTable -> Expr -> [IR.Instruction]
@@ -121,3 +122,47 @@ compileExprAndDiscard funcTable varTable expr =
 compileStatements :: FuncTable -> VarTable -> [Statement] -> [IR.Instruction]
 compileStatements funcTable varTable stmts =
   concatMap (compileStatement funcTable varTable) stmts
+
+-- for (init; cond; update) { body }
+compileFor :: FuncTable -> VarTable -> Maybe Statement -> Maybe Expr -> Maybe Statement -> [Statement] -> [IR.Instruction]
+compileFor funcTable varTable initStmt condExpr updateStmt body =
+  initCode ++
+  conditionCode ++
+  [IR.JumpIfFalse jumpToEnd] ++
+  bodyCode ++
+  updateCode ++
+  [IR.Jump jumpBackToStart]
+  where
+    initCode = compileForInit funcTable varTable initStmt
+    conditionCode = compileForCondition funcTable varTable condExpr
+    bodyCode = compileStatements funcTable varTable body
+    updateCode = compileForUpdate funcTable varTable updateStmt
+    jumpToEnd = calculateForLoopEnd bodyCode updateCode
+    jumpBackToStart = calculateForLoopStart conditionCode bodyCode updateCode
+
+-- for loop init (runs once before loop)
+compileForInit :: FuncTable -> VarTable -> Maybe Statement -> [IR.Instruction]
+compileForInit funcTable varTable initStmt =
+  maybe [] (compileStatement funcTable varTable) initStmt
+
+-- for loop condition (faut check avant chaque iteration)
+compileForCondition :: FuncTable -> VarTable -> Maybe Expr -> [IR.Instruction]
+compileForCondition funcTable varTable Nothing =
+  [IR.PushBool True]  -- Alors infinite (void) si y a pas de conditions
+compileForCondition funcTable varTable (Just cond) =
+  compileExpr funcTable varTable cond
+
+-- for loop update a relancer apres chaque iteration
+compileForUpdate :: FuncTable -> VarTable -> Maybe Statement -> [IR.Instruction]
+compileForUpdate funcTable varTable updateStmt =
+  maybe [] (compileStatement funcTable varTable) updateStmt
+
+-- calcule jump pour se barrer de la for loop
+calculateForLoopEnd :: [IR.Instruction] -> [IR.Instruction] -> Int
+calculateForLoopEnd bodyCode updateCode =
+  length bodyCode + length updateCode + 2
+
+-- on calcule pour revenir a la condition
+calculateForLoopStart :: [IR.Instruction] -> [IR.Instruction] -> [IR.Instruction] -> Int
+calculateForLoopStart conditionCode bodyCode updateCode =
+  negate (length conditionCode + 1 + length bodyCode + length updateCode)
