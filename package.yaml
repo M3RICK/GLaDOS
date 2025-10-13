@@ -20,6 +20,7 @@ dependencies:
 - text
 - bytestring
 - binary
+- deepseq
 
 ghc-options:
   - -Wall
