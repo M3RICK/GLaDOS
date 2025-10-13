@@ -4,3 +4,6 @@ stack.yaml.lock
 .vscode/
 .gitignore
 glados
+
+# mdbook build output
+docs/book/book/
