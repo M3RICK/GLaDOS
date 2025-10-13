@@ -8,6 +8,7 @@ import Text.Megaparsec
 pType :: Parser Type
 pType =
       (TypeInt  <$ symbol "int")
+  <|> (TypeFloat <$ symbol "float")
   <|> (TypeBool <$ symbol "bool")
   <|> (TypeVoid <$ symbol "void")
   <|> (TypeInfer <$ symbol "var")
