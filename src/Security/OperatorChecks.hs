@@ -8,32 +8,49 @@ checkBinOp :: CheckEnv -> Op -> Expr -> Expr -> (Expr -> Either TypeError Type) 
 checkBinOp env op e1 e2 getType =
   getOperatorChecker op env e1 e2 getType
 
+checkUnOp :: CheckEnv -> UnOp -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+checkUnOp env op e getType =
+  getUnaryOperatorChecker op env e getType
+
 getOperatorChecker :: Op -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
 getOperatorChecker op = case op of
-  Add -> arithmeticOp TypeInt
-  Sub -> arithmeticOp TypeInt
-  Mul -> arithmeticOp TypeInt
-  Div -> divisionOp TypeInt
-  Lt  -> comparisonOp TypeBool
-  Gt  -> comparisonOp TypeBool
-  Le  -> comparisonOp TypeBool
-  Ge  -> comparisonOp TypeBool
+  Add -> numericOp
+  Sub -> numericOp
+  Mul -> numericOp
+  Div -> divisionOp
+  Lt  -> comparisonOp
+  Gt  -> comparisonOp
+  Le  -> comparisonOp
+  Ge  -> comparisonOp
   Eq  -> equalityOp TypeBool
   Neq -> equalityOp TypeBool
   And -> logicalOp TypeBool
   Or  -> logicalOp TypeBool
 
-arithmeticOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-arithmeticOp resultType env e1 e2 getType = do
-  requireType TypeInt e1 getType "in arithmetic"
-  requireType TypeInt e2 getType "in arithmetic"
-  return resultType
+getUnaryOperatorChecker :: UnOp -> CheckEnv -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+getUnaryOperatorChecker op = case op of
+  Neg -> negationOp
+  Not -> notOp
 
-comparisonOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-comparisonOp resultType env e1 e2 getType = do
-  requireType TypeInt e1 getType "in comparison"
-  requireType TypeInt e2 getType "in comparison"
-  return resultType
+-- Numeric operations work on both Int and Float, return same type
+numericOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+numericOp env e1 e2 getType = do
+  t1 <- getType e1
+  t2 <- getType e2
+  case (t1, t2) of
+    (TypeInt, TypeInt) -> return TypeInt
+    (TypeFloat, TypeFloat) -> return TypeFloat
+    _ -> Left (TypeMismatch t1 t2 (getExprPos e2) "same type sinon ca marche pas")
+
+-- Comparison operations work on both Int and Float, return Bool
+comparisonOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+comparisonOp env e1 e2 getType = do
+  t1 <- getType e1
+  t2 <- getType e2
+  case (t1, t2) of
+    (TypeInt, TypeInt) -> return TypeBool
+    (TypeFloat, TypeFloat) -> return TypeBool
+    _ -> Left (TypeMismatch t1 t2 (getExprPos e2) "on compare pas des patates et des tomates")
 
 equalityOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
 equalityOp resultType env e1 e2 getType = do
@@ -59,11 +76,30 @@ requireType expected expr getType context = do
 -- Check if expression is literal zero
 checkNotZero :: Expr -> Either TypeError ()
 checkNotZero (NumLit (Located pos 0)) = Left (DivisionByZero pos)
+checkNotZero (FloatLit (Located pos 0.0)) = Left (DivisionByZero pos)
 checkNotZero _ = Right ()
 
-divisionOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-divisionOp resultType env e1 e2 getType = do
-  requireType TypeInt e1 getType "in division"
-  requireType TypeInt e2 getType "in division"
+divisionOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+divisionOp env e1 e2 getType = do
+  t1 <- getType e1
+  t2 <- getType e2
   checkNotZero e2
-  return resultType
+  case (t1, t2) of
+    (TypeInt, TypeInt) -> return TypeInt
+    (TypeFloat, TypeFloat) -> return TypeFloat
+    _ -> Left (TypeMismatch t1 t2 (getExprPos e2) "in division les deux oper ont besoins d etre Ints ou floats")
+
+-- Negation operation works on both Int and Float, returns same type
+negationOp :: CheckEnv -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+negationOp env e getType = do
+  t <- getType e
+  case t of
+    TypeInt -> return TypeInt
+    TypeFloat -> return TypeFloat
+    _ -> Left (TypeMismatch TypeInt t (getExprPos e) "in negation teuteuteu ca a besoin d etre un int ou un float")
+
+-- Logical not operation works on Bool, returns Bool
+notOp :: CheckEnv -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
+notOp env e getType = do
+  requireType TypeBool e getType "in logical not"
+  return TypeBool
