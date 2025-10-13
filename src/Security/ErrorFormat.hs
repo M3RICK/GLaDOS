@@ -4,16 +4,16 @@ import Security.Types
 import AST.AST
 import Text.Megaparsec.Pos
 
--- Affiche Format type error for display
-showTypeError :: TypeError -> String
-showTypeError = formatError
-
 -- Select les formatted error types
 formatError :: TypeError -> String
 formatError (UndefinedVar name pos) =
   formatUndefinedVar name pos
 formatError (UndefinedFunc name pos) =
   formatUndefinedFunc name pos
+formatError (TypeMismatch exp got pos ctx) =
+  formatTypeMismatch exp got pos ctx
+formatError (AlreadyDefined name pos) =
+  formatAlreadyDefined name pos
 formatError (WrongArgCount name exp got pos) =
   formatWrongArgCount name exp got pos
 formatError (ReturnTypeMismatch exp got pos) =
@@ -65,5 +65,13 @@ formatMissingReturn name =
 -- On affiche ca pour que ce soit joli
 showType :: Type -> String
 showType TypeInt = "int"
+showType TypeFloat = "float"
 showType TypeBool = "bool"
 showType TypeVoid = "void"
+showType TypeInfer = "var"
+
+-- Format multiple type errors
+formatTypeErrors :: [TypeError] -> String
+formatTypeErrors [] = "Unknown type error"
+formatTypeErrors errors =
+  unlines $ map formatError errors

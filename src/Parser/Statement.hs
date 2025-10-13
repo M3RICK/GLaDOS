@@ -15,6 +15,7 @@ pStatement :: Parser Statement
 pStatement = choice
   [ pIf
   , pWhile
+  , pFor
   , pReturn
   , pDecl
   , try pAssign  -- try because it starts like ExprStmt
@@ -64,3 +65,37 @@ pWhile = do
   cond <- parens pExpr
   body <- braces (many pStatement)
   return (While cond body)
+
+pFor :: Parser Statement
+pFor = do
+  void (symbol "for")
+  void (symbol "(")
+  initStmt <- optional parseForInit
+  void semi
+  condition <- optional pExpr
+  void semi
+  update <- optional parseForUpdate
+  void (symbol ")")
+  body <- braces (many pStatement)
+  return (For initStmt condition update body)
+
+parseForInit :: Parser Statement
+parseForInit = try pDeclNoSemi <|> try pAssignNoSemi
+  where
+    pDeclNoSemi = do
+      t <- pType
+      Located _ name <- pIdentifier
+      initVal <- optional (symbol "=" *> pExpr)
+      return (Decl t name initVal)
+    pAssignNoSemi = do
+      Located _ name <- pIdentifier
+      void (symbol "=")
+      expr <- pExpr
+      return (Assign name expr)
+
+parseForUpdate :: Parser Statement
+parseForUpdate = do
+  Located _ name <- pIdentifier
+  void (symbol "=")
+  expr <- pExpr
+  return (Assign name expr)

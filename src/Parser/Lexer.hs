@@ -49,8 +49,8 @@ comma = symbol ","
 -- keywords, ne peuvent pas etre des identifiants
 keywords :: [String]
 keywords =
-  [ "if", "else", "while", "return"
-  , "int", "bool", "void"
+  [ "if", "else", "while", "for", "return"
+  , "int", "float", "bool", "var", "void"
   , "true", "false"
   ]
 
@@ -71,6 +71,10 @@ pIdentifier = located $ (lexeme . try) (p >>= check)
 -- Parse an integer literal with position
 pNumber :: Parser (Located Int)
 pNumber = located (lexeme L.decimal)
+
+-- Parse a float literal with position
+pFloat :: Parser (Located Double)
+pFloat = located (lexeme L.float)
 
 -- Parse a boolean with position
 pBool :: Parser (Located Bool)

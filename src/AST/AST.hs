@@ -28,6 +28,7 @@ data Statement
   | Assign String Expr                      -- x = expr;
   | If Expr [Statement] (Maybe [Statement]) -- if (...) { ... } else { ... }
   | While Expr [Statement]                  -- while (...) { ... }
+  | For (Maybe Statement) (Maybe Expr) (Maybe Statement) [Statement]
   | Return Expr                             -- return expr;
   | ExprStmt Expr                           -- e.g. function call as statement
   deriving (Show, Eq)
@@ -36,23 +37,33 @@ data Statement
 data Expr
   = BoolLit (Located Bool)
   | NumLit (Located Int)
+  | FloatLit (Located Double)
   | Var (Located String)
   | BinOp Op (Located Expr) (Located Expr)  -- Keep position of whole expression
+  | UnOp UnOp (Located Expr)                -- Unary operations
   | Call (Located String) [Expr]
   deriving (Show, Eq)
 
 -- | Supported types
 data Type
   = TypeInt
+  | TypeFloat
   | TypeBool
   | TypeVoid
+  | TypeInfer
   deriving (Show, Eq)
 
--- | Operators
+-- operators
 data Op
   = Add | Sub | Mul | Div
   | Eq | Neq | Lt | Gt | Le | Ge
   | And | Or
+  deriving (Show, Eq)
+
+-- Unary Operators
+data UnOp
+  = Neg  -- Negation (-)
+  | Not  -- Logical not (!)
   deriving (Show, Eq)
 
 -- Security
