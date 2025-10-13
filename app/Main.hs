@@ -101,3 +101,6 @@ main = do
         ["--compile"] -> readStdinWithTimeout >>= runCompile
         ["--run", f]  -> runBytecode f
         _             -> die "Invalid arguments. Use --help for usage information."
+
+
+-- TODO: AYMERIC DONT FORGET TO ADD YOUR CUSTOM SECURITY ERRORS IN HERE
