@@ -49,8 +49,8 @@ comma = symbol ","
 -- keywords, ne peuvent pas etre des identifiants
 keywords :: [String]
 keywords =
-  [ "if", "else", "while", "return"
-  , "int", "bool", "void"
+  [ "if", "else", "while", "for", "return"
+  , "int", "bool", "var", "void"
   , "true", "false"
   ]
 
