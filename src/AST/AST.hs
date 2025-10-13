@@ -28,6 +28,7 @@ data Statement
   | Assign String Expr                      -- x = expr;
   | If Expr [Statement] (Maybe [Statement]) -- if (...) { ... } else { ... }
   | While Expr [Statement]                  -- while (...) { ... }
+  | For (Maybe Statement) (Maybe Expr) (Maybe Statement) [Statement]
   | Return Expr                             -- return expr;
   | ExprStmt Expr                           -- e.g. function call as statement
   deriving (Show, Eq)
