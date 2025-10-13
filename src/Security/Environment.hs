@@ -5,10 +5,6 @@ import qualified Data.Set as S
 import Security.Types
 import AST.AST
 
--- Create empty environment
-emptyEnv :: CheckEnv
-emptyEnv = CheckEnv M.empty M.empty Nothing S.empty
-
 -- Add variable to environment
 addVar :: String -> Type -> CheckEnv -> CheckEnv
 addVar name typ env =
@@ -21,10 +17,6 @@ lookupVar name env = M.lookup name (varEnv env)
 -- Lookup function signature
 lookupFunc :: String -> CheckEnv -> Maybe (Type, [Type])
 lookupFunc name env = M.lookup name (funcEnv env)
-
--- Set current function return type
-setReturnType :: Type -> CheckEnv -> CheckEnv
-setReturnType typ env = env { currentReturnType = Just typ }
 
 -- Build environment from function parameters
 makeParamEnv :: [Parameter] -> VarEnv
