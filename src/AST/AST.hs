@@ -47,6 +47,7 @@ data Type
   = TypeInt
   | TypeBool
   | TypeVoid
+  | TypeInfer
   deriving (Show, Eq)
 
 -- | Operators
