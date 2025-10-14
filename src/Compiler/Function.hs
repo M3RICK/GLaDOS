@@ -1,4 +1,4 @@
-module Compiler.Function where
+module Compiler.Function (compileFunction, compileFunctions) where
 
 import IR.Types
 import AST.AST
