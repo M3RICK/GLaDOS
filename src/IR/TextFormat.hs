@@ -1,7 +1,6 @@
 module IR.TextFormat (showProgram) where
 
 import IR.Types
-import Data.List (intercalate)
 
 -- Fonction qui va tout rendre visible, c est ca qu il faut appeller
 showProgram :: IRProgram -> String
