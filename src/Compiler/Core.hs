@@ -1,4 +1,4 @@
-module Compiler.Core where
+module Compiler.Core (compileProgram, compileToText, compileToIR) where
 
 import IR.Types
 import IR.TextFormat
