@@ -1,4 +1,12 @@
-module VM.InstructionHandlers where
+module VM.InstructionHandlers (
+    executeStackOp
+  , executeVarOp
+  , executeArithOp
+  , executeCompOp
+  , executeLogicOp
+  , executeControlFlow
+  , getFunctionAt
+) where
 
 import IR.Types
 import VM.HelperFunc
