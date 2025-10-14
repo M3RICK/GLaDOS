@@ -6,7 +6,6 @@ import Compiler.Environment
 import Compiler.Statement
 import qualified Security.Environment as SE
 import Security.Types (CheckEnv)
-import qualified Data.Map as M
 
 -- single function tiouf dans l'IR
 compileFunction :: CheckEnv -> FuncTable -> Function -> CompiledFunction
