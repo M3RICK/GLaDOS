@@ -1,4 +1,4 @@
-module Compiler.Expr where
+module Compiler.Expr (compileExpr) where
 
 import qualified IR.Types as IR
 import AST.AST
