@@ -1,4 +1,4 @@
-module AST.Helpers where
+module AST.Helpers (getExprPos, defaultPos) where
 
 import AST.AST
 import Text.Megaparsec.Pos (SourcePos, initialPos)
