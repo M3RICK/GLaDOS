@@ -16,6 +16,7 @@ instance Binary Instruction where
         PushInt n -> putWord8 0 >> put n
         PushBool b -> putWord8 1 >> put b
         Pop -> putWord8 2
+        PushFloat f -> putWord8 3 >> put f
         -- Variable operations (10-19)
         GetLocal n -> putWord8 10 >> put n
         SetLocal n -> putWord8 11 >> put n
@@ -24,6 +25,10 @@ instance Binary Instruction where
         SubInt -> putWord8 21
         MulInt -> putWord8 22
         DivInt -> putWord8 23
+        AddFloat -> putWord8 24
+        SubFloat -> putWord8 25
+        MulFloat -> putWord8 26
+        DivFloat -> putWord8 27
         -- Comparison operations (30-39)
         EqInt -> putWord8 30
         NeqInt -> putWord8 31
@@ -41,6 +46,17 @@ instance Binary Instruction where
         Return -> putWord8 53
         -- Utility (60-69)
         Halt -> putWord8 60
+        -- Float Comparison operations (70-75)
+        EqFloat -> putWord8 70
+        NeqFloat -> putWord8 71
+        LtFloat -> putWord8 72
+        GtFloat -> putWord8 73
+        LeFloat -> putWord8 74
+        GeFloat -> putWord8 75
+        -- Unary operations (80-82)
+        NegInt -> putWord8 80
+        NegFloat -> putWord8 81
+        NotBool -> putWord8 82
 
     get = do
         tag <- getWord8
@@ -49,6 +65,7 @@ instance Binary Instruction where
             0 -> PushInt <$> get
             1 -> PushBool <$> get
             2 -> return Pop
+            3 -> PushFloat <$> get
             -- Variable operations
             10 -> GetLocal <$> get
             11 -> SetLocal <$> get
@@ -57,6 +74,10 @@ instance Binary Instruction where
             21 -> return SubInt
             22 -> return MulInt
             23 -> return DivInt
+            24 -> return AddFloat
+            25 -> return SubFloat
+            26 -> return MulFloat
+            27 -> return DivFloat
             -- Comparison operations
             30 -> return EqInt
             31 -> return NeqInt
@@ -74,6 +95,17 @@ instance Binary Instruction where
             53 -> return Return
             -- Utility
             60 -> return Halt
+            -- Float Comparison operations
+            70 -> return EqFloat
+            71 -> return NeqFloat
+            72 -> return LtFloat
+            73 -> return GtFloat
+            74 -> return LeFloat
+            75 -> return GeFloat
+            -- Unary operations
+            80 -> return NegInt
+            81 -> return NegFloat
+            82 -> return NotBool
             -- Unknown tag
             _ -> fail $ "Invalid instruction tag: " ++ show tag
 
@@ -121,10 +153,14 @@ instance Binary Value where
         VBool b -> do
             putWord8 1
             put b
+        VFloat f -> do
+            putWord8 2
+            put f
 
     get = do
         tag <- getWord8
         case tag of
             0 -> VInt <$> get
             1 -> VBool <$> get
+            2 -> VFloat <$> get
             _ -> fail $ "Invalid value tag: " ++ show tag
