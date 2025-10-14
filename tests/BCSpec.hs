@@ -165,6 +165,50 @@ spec = do
                 let result = roundTrip program
                 code (head (functions result)) `shouldBe` [GetLocal 0, SetLocal 1, GetLocal 1]
 
+            it "round-trips PushFloat instruction" $ do
+                let func = CompiledFunction {
+                    funcName = "test",
+                    paramCount = 0,
+                    localVarCount = 0,
+                    code = [PushFloat 3.14]
+                }
+                let program = IRProgram {functions = [func], mainIndex = 0}
+                let result = roundTrip program
+                code (head (functions result)) `shouldBe` [PushFloat 3.14]
+
+            it "round-trips float arithmetic instructions" $ do
+                let func = CompiledFunction {
+                    funcName = "test",
+                    paramCount = 0,
+                    localVarCount = 0,
+                    code = [AddFloat, SubFloat, MulFloat, DivFloat]
+                }
+                let program = IRProgram {functions = [func], mainIndex = 0}
+                let result = roundTrip program
+                code (head (functions result)) `shouldBe` [AddFloat, SubFloat, MulFloat, DivFloat]
+
+            it "round-trips float comparison instructions" $ do
+                let func = CompiledFunction {
+                    funcName = "test",
+                    paramCount = 0,
+                    localVarCount = 0,
+                    code = [EqFloat, NeqFloat, LtFloat, GtFloat, LeFloat, GeFloat]
+                }
+                let program = IRProgram {functions = [func], mainIndex = 0}
+                let result = roundTrip program
+                code (head (functions result)) `shouldBe` [EqFloat, NeqFloat, LtFloat, GtFloat, LeFloat, GeFloat]
+
+            it "round-trips unary operation instructions" $ do
+                let func = CompiledFunction {
+                    funcName = "test",
+                    paramCount = 0,
+                    localVarCount = 0,
+                    code = [NegInt, NegFloat, NotBool]
+                }
+                let program = IRProgram {functions = [func], mainIndex = 0}
+                let result = roundTrip program
+                code (head (functions result)) `shouldBe` [NegInt, NegFloat, NotBool]
+
         describe "CompiledFunction" $ do
             it "round-trips function name" $ do
                 let func = CompiledFunction {
@@ -290,6 +334,49 @@ spec = do
             funcName (functions result !! 1) `shouldBe` "main"
             code (functions result !! 0) `shouldBe` [GetLocal 0, GetLocal 1, AddInt, Return]
             code (functions result !! 1) `shouldBe` [PushInt 10, PushInt 20, Call 0, Halt]
+
+        it "round-trips a program with float operations" $ do
+            let func = CompiledFunction {
+                funcName = "main",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushFloat 2.5, PushFloat 3.0, AddFloat, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            let result = roundTrip program
+            code (head (functions result)) `shouldBe` [PushFloat 2.5, PushFloat 3.0, AddFloat, Halt]
+
+        it "round-trips a program with unary operations" $ do
+            let func = CompiledFunction {
+                funcName = "main",
+                paramCount = 0,
+                localVarCount = 0,
+                code = [PushInt 5, NegInt, PushFloat 3.14, NegFloat, PushBool True, NotBool, Halt]
+            }
+            let program = IRProgram {functions = [func], mainIndex = 0}
+            let result = roundTrip program
+            code (head (functions result)) `shouldBe` [PushInt 5, NegInt, PushFloat 3.14, NegFloat, PushBool True, NotBool, Halt]
+
+-- ============================================================================
+-- Value Serialization Tests
+-- ============================================================================
+
+    describe "Value Serialization" $ do
+
+        it "round-trips VFloat values" $ do
+            let floatBytes = encode (VFloat 3.14159 :: Value)
+            let result = decode floatBytes :: Value
+            result `shouldBe` VFloat 3.14159
+
+        it "round-trips VInt values" $ do
+            let intBytes = encode (VInt 42 :: Value)
+            let result = decode intBytes :: Value
+            result `shouldBe` VInt 42
+
+        it "round-trips VBool values" $ do
+            let boolBytes = encode (VBool True :: Value)
+            let result = decode boolBytes :: Value
+            result `shouldBe` VBool True
 
 -- ============================================================================
 -- File I/O Tests
