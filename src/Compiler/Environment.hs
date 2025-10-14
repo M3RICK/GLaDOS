@@ -1,4 +1,14 @@
-module Compiler.Environment where
+module Compiler.Environment (
+    VarTable
+  , FuncTable
+  , makeParamTable
+  , makeFuncTable
+  , findMainIndex
+  , collectLocalDecls
+  , buildVarTable
+  , lookupVar
+  , lookupFunc
+) where
 
 import qualified Data.Map as M
 import AST.AST
