@@ -1,4 +1,4 @@
-module IR.Types where
+module IR.Types (IRProgram(..), CompiledFunction(..), Instruction(..), Value(..)) where
 
 -- | A complete compiled program
 data IRProgram = IRProgram
