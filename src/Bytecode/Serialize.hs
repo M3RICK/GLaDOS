@@ -17,14 +17,14 @@ deserializeProgram bytes = decode bytes
 
 serializeProgramToStdout :: IRProgram -> IO ()
 serializeProgramToStdout program =
-  BSL.putStr (serializeProgram program)
+    BSL.putStr (serializeProgram program)
 
 -- --run mode
 loadProgramFromFile :: FilePath -> IO IRProgram
 loadProgramFromFile path = do
-  bytes <- BSL.readFile path
-  return $ deserializeProgram bytes
+    bytes <- BSL.readFile path
+    return $ deserializeProgram bytes
 
 saveProgramToFile :: FilePath -> IRProgram -> IO ()
 saveProgramToFile path program =
-  BSL.writeFile path (serializeProgram program)
+    BSL.writeFile path (serializeProgram program)
