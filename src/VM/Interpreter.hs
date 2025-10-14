@@ -1,4 +1,4 @@
-module VM.Interpreter where
+module VM.Interpreter (executeInstruction, execute) where
 
 import IR.Types
 import VM.HelperFunc
