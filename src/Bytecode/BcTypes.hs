@@ -1,4 +1,5 @@
-module Bytecode.BcTypes where
+{-# OPTIONS_GHC -Wno-orphans #-}
+module Bytecode.BcTypes () where
 
 import Data.Binary (Binary, get, put, getWord8, putWord8)
 -- Binary: The typeclass we'll implement (like Show or Eq)
