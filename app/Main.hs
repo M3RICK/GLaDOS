@@ -11,6 +11,7 @@ import Security.TypeChecker (checkProgram)
 import Compiler.Core (compileProgram, compileToText)
 import VM.Interpreter (execute)
 import IR.Types (mainIndex)
+import Bytecode.Serialize (serializeProgramToStdout, loadProgramFromFile)
 
 -- Exit with error code 84
 die :: String -> IO a
@@ -28,18 +29,18 @@ printHelp = putStr $ unlines
     , "    (default)        Read from stdin, compile and execute"
     , "    --ast            Parse and display the Abstract Syntax Tree"
     , "    --ir             Parse, compile and display human-readable IR"
-    , "    --compile        Compile to bytecode and write to stdout (TODO)"
-    , "    --run FILE       Execute bytecode from FILE (TODO)"
+    , "    --compile        Compile to bytecode and write to stdout"
+    , "    --run FILE       Execute bytecode from FILE"
     , ""
     , "OPTIONS:"
     , "    --help           Display this help message"
     , ""
     , "EXAMPLES:"
-    , "    ./glados < program.c              # Compile and execute"
-    , "    ./glados --ast < program.c        # Show AST"
-    , "    ./glados --ir < program.c         # Show human-readable IR"
-    , "    ./glados --compile < program.c    # Output bytecode (TODO)"
-    , "    ./glados --run bytecode.bc        # Run bytecode (TODO)"
+    , "    ./glados < program.c                   # Compile and execute"
+    , "    ./glados --ast < program.c             # Show AST"
+    , "    ./glados --ir < program.c              # Show human-readable IR"
+    , "    ./glados --compile < program.c > a.gbc # Compile to bytecode"
+    , "    ./glados --run a.gbc                   # Execute bytecode"
     , ""
     , "EXIT CODES:"
     , "    0    Success"
@@ -79,28 +80,36 @@ runIr sourceCode = case parseProgram sourceCode of
         Left _ -> die "Type error"
         Right validatedAst -> putStrLn (compileToText validatedAst)
 
--- Compile to bytecode (TODO - needs Binary serialization)
+-- creates Bytecode
 runCompile :: String -> IO ()
-runCompile _sourceCode =
-    die "Error: Bytecode compilation not yet implemented\nTODO: Implement Binary serialization for IRProgram"
+runCompile sourceCode = case parseProgram sourceCode of
+    Left _ -> die "Parse error"
+    Right ast -> case checkProgram ast of
+        Left _ -> die "Type error"
+        Right validatedAst ->
+            let irProgram = compileProgram validatedAst
+            in serializeProgramToStdout irProgram
 
--- Execute bytecode file (TODO - needs Binary deserialization)
+-- Loads existing Bytecode and executes
 runBytecode :: FilePath -> IO ()
-runBytecode _path =
-    die "Error: Bytecode execution not yet implemented\nTODO: Implement Binary deserialization for IRProgram"
+runBytecode path = do
+    irProgram <- loadProgramFromFile path
+    case execute irProgram (mainIndex irProgram) [] of
+        Left err -> die $ "Runtime error: " ++ err
+        Right value -> print value
 
 -- Main entry point
 main :: IO ()
 main = do
     args <- getArgs
     case args of
-        []            -> readStdinWithTimeout >>= runDefault
-        ["--help"]    -> printHelp
-        ["--ast"]     -> readStdinWithTimeout >>= runAst
-        ["--ir"]      -> readStdinWithTimeout >>= runIr
+        [] -> readStdinWithTimeout >>= runDefault
+        ["--help"] -> printHelp
+        ["--ast"] -> readStdinWithTimeout >>= runAst
+        ["--ir"] -> readStdinWithTimeout >>= runIr
         ["--compile"] -> readStdinWithTimeout >>= runCompile
-        ["--run", f]  -> runBytecode f
-        _             -> die "Invalid arguments. Use --help for usage information."
+        ["--run", f] -> runBytecode f
+        _ -> die "Invalid arguments. Use --help for usage information."
 
 
 -- TODO: AYMERIC DONT FORGET TO ADD YOUR CUSTOM SECURITY ERRORS IN HERE
