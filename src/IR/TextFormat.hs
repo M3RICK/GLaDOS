@@ -1,4 +1,4 @@
-module IR.TextFormat where
+module IR.TextFormat (showProgram) where
 
 import IR.Types
 import Data.List (intercalate)
