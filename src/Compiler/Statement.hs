@@ -1,4 +1,4 @@
-module Compiler.Statement where
+module Compiler.Statement (compileStatement, compileStatements) where
 
 import qualified IR.Types as IR
 import AST.AST
