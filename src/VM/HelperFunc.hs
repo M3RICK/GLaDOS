@@ -54,6 +54,7 @@ popInt :: VMState -> VMResult (Int, VMState)
 popInt state = case pop state of
     Right (VInt n, newState) -> Right (n, newState)
     Right (VBool _, _) -> Left "Type error: expected Int, got Bool"
+    Right (VFloat _, _) -> Left "Type error: expected Int, got Float"
     Left err -> Left err
 
 -- Pop and type-check for Bool
@@ -61,6 +62,7 @@ popBool :: VMState -> VMResult (Bool, VMState)
 popBool state = case pop state of
     Right (VBool b, newState) -> Right (b, newState)
     Right (VInt _, _) -> Left "Type error: expected Bool, got Int"
+    Right (VFloat _, _) -> Left "Type error: expected Bool, got Float"
     Left err -> Left err
 
 -- BinOp does as follows pop 2 ints, apply op, push result
