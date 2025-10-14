@@ -1,4 +1,14 @@
-module AST.AST where
+module AST.AST (
+    Program(..)
+  , Function(..)
+  , Parameter(..)
+  , Statement(..)
+  , Expr(..)
+  , Type(..)
+  , Op(..)
+  , UnOp(..)
+  , Located(..)
+) where
 
 import Text.Megaparsec.Pos (SourcePos)
 
