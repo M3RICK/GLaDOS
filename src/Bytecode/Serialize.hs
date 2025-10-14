@@ -1,4 +1,10 @@
-module Bytecode.Serialize where
+module Bytecode.Serialize (
+    serializeProgram
+  , deserializeProgram
+  , serializeProgramToStdout
+  , loadProgramFromFile
+  , saveProgramToFile
+) where
 
 import Data.Binary (encode, decode)
 -- encode: Takes any Binary type -> ByteString (file-ready bytes)
