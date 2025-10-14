@@ -1,4 +1,20 @@
-module VM.HelperFunc where
+module VM.HelperFunc (
+    VMError
+  , VMResult
+  , VMExecutor
+  , VMState(..)
+  , CallFrame(..)
+  , push
+  , pop
+  , getLocal
+  , setLocal
+  , popInt
+  , popBool
+  , binaryIntOp
+  , compareInts
+  , binaryBoolOp
+  , popNValues
+) where
 
 import IR.Types
 type VMError = String -- error msg string
