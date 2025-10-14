@@ -9,6 +9,7 @@ executeInstruction :: IRProgram -> Instruction -> VMState -> VMResult VMState
 executeInstruction program instr state = case instr of
     PushInt _ -> executeStackOp instr state
     PushBool _ -> executeStackOp instr state
+    PushFloat _ -> executeStackOp instr state
     Pop -> executeStackOp instr state
     GetLocal _ -> executeVarOp instr state
     SetLocal _ -> executeVarOp instr state
@@ -16,12 +17,25 @@ executeInstruction program instr state = case instr of
     SubInt -> executeArithOp instr state
     MulInt -> executeArithOp instr state
     DivInt -> executeArithOp instr state
+    AddFloat -> executeArithOp instr state
+    SubFloat -> executeArithOp instr state
+    MulFloat -> executeArithOp instr state
+    DivFloat -> executeArithOp instr state
+    NegInt -> executeArithOp instr state
+    NegFloat -> executeArithOp instr state
+    NotBool -> executeLogicOp instr state
     EqInt -> executeCompOp instr state
     NeqInt -> executeCompOp instr state
     LtInt -> executeCompOp instr state
     GtInt -> executeCompOp instr state
     LeInt -> executeCompOp instr state
     GeInt -> executeCompOp instr state
+    EqFloat -> executeCompOp instr state
+    NeqFloat -> executeCompOp instr state
+    LtFloat -> executeCompOp instr state
+    GtFloat -> executeCompOp instr state
+    LeFloat -> executeCompOp instr state
+    GeFloat -> executeCompOp instr state
     AndBool -> executeLogicOp instr state
     OrBool -> executeLogicOp instr state
     Jump _ -> executeControlFlow execute program instr state
