@@ -18,7 +18,8 @@ pExpr = makeExprParser pTerm operatorTable
 pTerm :: Parser Expr
 pTerm =
       (BoolLit <$> pBool)          -- true/false
-  <|> (NumLit <$> pNumber)         -- numbers
+  <|> try (FloatLit <$> pFloat)    -- floats (must come before ints)
+  <|> (NumLit <$> pNumber)         -- integers
   <|> try pCall                    -- function call
   <|> (Var <$> pIdentifier)        -- variable
   <|> parens pExpr                 -- parenthesized expression
@@ -35,7 +36,8 @@ pCall = do
 
 operatorTable :: [[Operator Parser Expr]]
 operatorTable =
-  [ [ binary "*" (BinOp Mul), binary "/" (BinOp Div) ]
+  [ [ prefix "-" (UnOp Neg), prefix "!" (UnOp Not) ]
+  , [ binary "*" (BinOp Mul), binary "/" (BinOp Div) ]
   , [ binary "+" (BinOp Add), binary "-" (BinOp Sub) ]
   , [ binary "<=" (BinOp Le), binary ">=" (BinOp Ge)
     , binary "==" (BinOp Eq), binary "!=" (BinOp Neq)
@@ -51,3 +53,10 @@ binary name f = InfixL $ do
   pos <- getSourcePos  -- on choppe la position quand on detecte un op
   return $ \e1 e2 ->
         f (Located pos e1) (Located pos e2)
+
+-- Prefix operator pour tout ce qui va toucher aux unaries
+prefix :: String -> (Located Expr -> Expr) -> Operator Parser Expr
+prefix name f = Prefix $ do
+  void (try (symbol name))
+  pos <- getSourcePos
+  return $ \e -> f (Located pos e)

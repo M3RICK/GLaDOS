@@ -4,10 +4,6 @@ import Security.Types
 import AST.AST
 import Text.Megaparsec.Pos
 
--- Affiche Format type error for display
-showTypeError :: TypeError -> String
-showTypeError = formatError
-
 -- Select les formatted error types
 formatError :: TypeError -> String
 formatError (UndefinedVar name pos) =
@@ -69,5 +65,13 @@ formatMissingReturn name =
 -- On affiche ca pour que ce soit joli
 showType :: Type -> String
 showType TypeInt = "int"
+showType TypeFloat = "float"
 showType TypeBool = "bool"
 showType TypeVoid = "void"
+showType TypeInfer = "var"
+
+-- Format multiple type errors
+formatTypeErrors :: [TypeError] -> String
+formatTypeErrors [] = "Unknown type error"
+formatTypeErrors errors =
+  unlines $ map formatError errors

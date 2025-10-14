@@ -18,24 +18,44 @@ data Instruction
   -- push values onto the stack
   = PushInt Int
   | PushBool Bool
+  | PushFloat Double
 
   -- local variables
   | GetLocal Int
   | SetLocal Int
 
-  -- Arithmetic
+  -- Arithmetic (Int)
   | AddInt
   | SubInt
   | MulInt
   | DivInt
 
-  -- Comparison
+  -- Arithmetic (Float)
+  | AddFloat
+  | SubFloat
+  | MulFloat
+  | DivFloat
+
+  -- Unary operations
+  | NegInt
+  | NegFloat
+  | NotBool
+
+  -- Comparison (Int)
   | EqInt
   | NeqInt
   | LtInt
   | GtInt
   | LeInt
   | GeInt
+
+  -- Comparison (Float)
+  | EqFloat
+  | NeqFloat
+  | LtFloat
+  | GtFloat
+  | LeFloat
+  | GeFloat
 
   -- Logical
   | AndBool
@@ -56,4 +76,5 @@ data Instruction
 data Value
   = VInt Int
   | VBool Bool
+  | VFloat Double
   deriving (Show, Eq)

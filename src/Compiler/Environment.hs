@@ -9,7 +9,7 @@ type VarTable = M.Map String Int
 -- nom d’une fonction à son indice
 type FuncTable = M.Map String Int
 
---   { "x" -> 0, "y" -> 1, "z" -> 2 }
+-- { "x" -> 0, "y" -> 1, "z" -> 2 }
 makeParamTable :: [Parameter] -> VarTable
 makeParamTable params =
   M.fromList $ zip (map paramName params) [0..]
@@ -30,11 +30,12 @@ findMainIndex funcs =
 collectLocalDecls :: [Statement] -> [(String, Type)]
 collectLocalDecls stmts = concatMap extractDecl stmts
 
---   On gère les cas de base, les 'if', et les 'while'.
+--   On gère les cas de base, les 'if', les 'while', et les 'for'.
 extractDecl :: Statement -> [(String, Type)]
 extractDecl (Decl typ name _) = extractSimpleDecl typ name
 extractDecl (If _ thenBody maybeElse) = extractIfDecls thenBody maybeElse
 extractDecl (While _ body) = extractWhileDecls body
+extractDecl (For maybeInit _ _ body) = extractForDecls maybeInit body
 extractDecl _ = []  -- les autres instructions ne déclarent rien
 
 -- Extract a simple variable declaration
@@ -46,6 +47,10 @@ extractIfDecls thenBody maybeElse = collectFromBranches thenBody maybeElse
 
 extractWhileDecls :: [Statement] -> [(String, Type)]
 extractWhileDecls body = collectLocalDecls body
+
+extractForDecls :: Maybe Statement -> [Statement] -> [(String, Type)]
+extractForDecls maybeInit body =
+  maybe [] extractDecl maybeInit ++ collectLocalDecls body
 
 -- | Récupère les déclarations dans les deux branches d un if
 collectFromBranches :: [Statement] -> Maybe [Statement] -> [(String, Type)]

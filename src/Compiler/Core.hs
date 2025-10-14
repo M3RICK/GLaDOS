@@ -17,3 +17,7 @@ compileProgram (Program funcs) =
 -- Badabing badaboom ca compile ca convertit en qqch de lisible
 compileToText :: Program -> String
 compileToText program = showProgram (compileProgram program)
+
+-- Compile to IR only (no I/O)
+compileToIR :: Program -> IRProgram
+compileToIR = compileProgram

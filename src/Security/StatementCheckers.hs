@@ -55,6 +55,27 @@ checkStatements env (stmt:rest) =
   let (newEnv, errors) = checkStatement env stmt
   in errors ++ checkStatements newEnv rest
 
+checkForInit :: CheckEnv -> Maybe Statement -> (CheckEnv, [TypeError])
+checkForInit env Nothing = (env, [])
+checkForInit env (Just stmt) = checkStatement env stmt
+
+checkForCondition :: CheckEnv -> Maybe Expr -> [TypeError]
+checkForCondition _ Nothing = []
+checkForCondition env (Just expr) = checkExpr env expr TypeBool
+
+checkForUpdate :: CheckEnv -> Maybe Statement -> [TypeError]
+checkForUpdate _ Nothing = []
+checkForUpdate env (Just stmt) = snd $ checkStatement env stmt
+
+checkFor :: CheckEnv -> Maybe Statement -> Maybe Expr -> Maybe Statement -> [Statement] -> (CheckEnv, [TypeError])
+checkFor env initStmt condExpr updateStmt body =
+  case checkForInit env initStmt of
+    (envAfterInit, initErrors) ->
+      (env, initErrors
+         ++ checkForCondition envAfterInit condExpr
+         ++ checkForUpdate envAfterInit updateStmt
+         ++ checkStatements envAfterInit body)
+
 checkStatement :: CheckEnv -> Statement -> (CheckEnv, [TypeError])
 checkStatement env stmt = case stmt of
   Decl t n e -> checkDecl env t n e
@@ -62,4 +83,5 @@ checkStatement env stmt = case stmt of
   Return e -> checkReturn env e
   If c t e -> checkIf env c t e
   While c b -> checkWhile env c b
+  For i c u b -> checkFor env i c u b
   ExprStmt e -> checkExprStmt env e

@@ -3,13 +3,18 @@ module Security.TypeChecker where
 import Security.Types
 import Security.Environment
 import Security.StatementCheckers
+import Security.TypeInference (inferProgram)
 import AST.AST
 import Security.ReturnChecker (listHasReturn)
 
 checkProgram :: Program -> Either [TypeError] Program
-checkProgram prog@(Program funcs) =
+checkProgram prog = do
+  inferredProg <- inferProgram prog
+  let Program funcs = inferredProg
   let errors = checkAllFunctions funcs
-  in if null errors then Right prog else Left errors
+  if null errors
+    then Right inferredProg
+    else Left errors
 
 checkAllFunctions :: [Function] -> [TypeError]
 checkAllFunctions funcs =

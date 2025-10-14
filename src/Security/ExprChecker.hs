@@ -20,9 +20,12 @@ getExprType :: CheckEnv -> Expr -> Either TypeError Type
 getExprType env expr = case expr of
   BoolLit _  -> Right TypeBool
   NumLit _   -> Right TypeInt
+  FloatLit _ -> Right TypeFloat
   Var loc    -> checkVariable env loc
   BinOp op (Located _ e1) (Located _ e2) ->
     checkBinOp env op e1 e2 (getExprType env)
+  UnOp op (Located _ e) ->
+    checkUnOp env op e (getExprType env)
   Call loc args -> checkFunctionCall env loc args
 
 -- Check reference
