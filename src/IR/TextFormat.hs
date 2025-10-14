@@ -31,25 +31,45 @@ formatInstruction instr = case instr of
   -- Stack operations
   PushInt n -> formatStackOp "PUSH.I64" (show n)
   PushBool b -> formatStackOp "PUSH.I32" (if b then "1" else "0")
+  PushFloat f -> formatStackOp "PUSH.F64" (show f)
   Pop -> "POP"
 
   -- Variables
   GetLocal n -> formatVarOp "GET" n
   SetLocal n -> formatVarOp "SET" n
 
-  -- Arithmetic
+  -- Arithmetic (Int)
   AddInt -> formatArithOp "ADD"
   SubInt -> formatArithOp "SUB"
   MulInt -> formatArithOp "MUL"
   DivInt -> formatArithOp "DIV"
 
-  -- Comparisons
+  -- Arithmetic (Float)
+  AddFloat -> "ADD.F64"
+  SubFloat -> "SUB.F64"
+  MulFloat -> "MUL.F64"
+  DivFloat -> "DIV.F64"
+
+  -- Unary operations
+  NegInt -> "NEG.I64"
+  NegFloat -> "NEG.F64"
+  NotBool -> "NOT.I32"
+
+  -- Comparisons (Int)
   EqInt -> formatCompOp "EQ"
   NeqInt -> formatCompOp "NEQ"
   LtInt -> formatCompOp "LT"
   GtInt -> formatCompOp "GT"
   LeInt -> formatCompOp "LE"
   GeInt -> formatCompOp "GE"
+
+  -- Comparisons (Float)
+  EqFloat -> "CMP.EQ.F64"
+  NeqFloat -> "CMP.NEQ.F64"
+  LtFloat -> "CMP.LT.F64"
+  GtFloat -> "CMP.GT.F64"
+  LeFloat -> "CMP.LE.F64"
+  GeFloat -> "CMP.GE.F64"
 
   -- Logical
   AndBool -> formatLogicOp "AND"
