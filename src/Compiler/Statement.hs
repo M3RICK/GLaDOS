@@ -148,7 +148,7 @@ compileForInit checkEnv funcTable varTable initStmt =
 
 -- for loop condition (faut check avant chaque iteration)
 compileForCondition :: CheckEnv -> FuncTable -> VarTable -> Maybe Expr -> [IR.Instruction]
-compileForCondition _checkEnv _funcTable _varTable Nothing =
+compileForCondition _ _ _ Nothing =
   [IR.PushBool True]  -- Alors infinite (void) si y a pas de conditions
 compileForCondition checkEnv funcTable varTable (Just cond) =
   compileExpr checkEnv funcTable varTable cond
