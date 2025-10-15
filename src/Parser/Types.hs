@@ -1,4 +1,4 @@
-module Parser.Types where
+module Parser.Types (pType) where
 
 import Parser.Lexer
 import AST.AST
