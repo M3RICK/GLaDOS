@@ -1,4 +1,4 @@
-module Security.TypeChecker where
+module Security.TypeChecker (checkProgram) where
 
 import Security.Types
 import Security.Environment
@@ -18,12 +18,12 @@ checkProgram prog = do
 
 checkAllFunctions :: [Function] -> [TypeError]
 checkAllFunctions funcs =
-  let funcEnv = collectFunctionSignatures funcs
-  in concatMap (checkFunction funcEnv) funcs
+  let fEnv = collectFunctionSignatures funcs
+  in concatMap (checkFunction fEnv) funcs
 
 checkFunction :: FuncEnv -> Function -> [TypeError]
-checkFunction funcEnv func =
-  let env = makeFunctionEnv funcEnv func
+checkFunction fEnv func =
+  let env = makeFunctionEnv fEnv func
       stmtErrors = checkStatements env (fBody func)
       returnError = checkFunctionReturns func
   in stmtErrors ++ returnError
