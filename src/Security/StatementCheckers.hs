@@ -1,4 +1,7 @@
-module Security.StatementCheckers where
+module Security.StatementCheckers
+  ( checkStatement
+  , checkStatements
+  ) where
 
 import Security.Types
 import Security.Environment
