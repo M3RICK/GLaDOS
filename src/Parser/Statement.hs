@@ -1,4 +1,4 @@
-module Parser.Statement where
+module Parser.Statement (pStatement) where
 
 import Parser.Lexer
 import Parser.Expr
