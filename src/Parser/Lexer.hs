@@ -1,4 +1,18 @@
-module Parser.Lexer where
+module Parser.Lexer
+  ( Parser
+  , whitespace
+  , lexeme
+  , symbol
+  , located
+  , parens
+  , braces
+  , semi
+  , comma
+  , pIdentifier
+  , pNumber
+  , pFloat
+  , pBool
+  ) where
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -24,9 +38,9 @@ symbol = L.symbol whitespace
 -- Helper to wrap parsed values with source position
 located :: Parser a -> Parser (Located a)
 located p = do
-  pos <- getSourcePos
+  position <- getSourcePos
   val <- p
-  return (Located pos val)
+  return (Located position val)
 
 -- symbols
 ------------------------------------------------------------
