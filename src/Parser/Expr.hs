@@ -1,4 +1,4 @@
-module Parser.Expr where
+module Parser.Expr (pExpr) where
 
 import Parser.Lexer
 import AST.AST
@@ -6,7 +6,6 @@ import AST.AST
 import Control.Monad (void)
 import Text.Megaparsec
 import Control.Monad.Combinators.Expr
-import qualified Text.Megaparsec.Char.Lexer as L
 
 -- Expression parser
 ------------------------------------------------------------
@@ -50,13 +49,13 @@ operatorTable =
 binary :: String -> (Located Expr -> Located Expr -> Expr) -> Operator Parser Expr
 binary name f = InfixL $ do
   void (try (symbol name))
-  pos <- getSourcePos  -- on choppe la position quand on detecte un op
+  position <- getSourcePos  -- on choppe la position quand on detecte un op
   return $ \e1 e2 ->
-        f (Located pos e1) (Located pos e2)
+        f (Located position e1) (Located position e2)
 
 -- Prefix operator pour tout ce qui va toucher aux unaries
 prefix :: String -> (Located Expr -> Expr) -> Operator Parser Expr
 prefix name f = Prefix $ do
   void (try (symbol name))
-  pos <- getSourcePos
-  return $ \e -> f (Located pos e)
+  position <- getSourcePos
+  return $ \e -> f (Located position e)
