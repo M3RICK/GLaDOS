@@ -1,5 +1,5 @@
 -- src/Parser/Program.hs
-module Parser.Program where
+module Parser.Program (pProgram) where
 
 import Parser.Function
 import Parser.Lexer (Parser)  -- Add this import
