@@ -1,11 +1,10 @@
-module Security.TypeInference where
+module Security.TypeInference (inferProgram) where
 
 import AST.AST
 import Security.Types
 import Security.Environment
 import Security.ExprChecker (getExprType)
-import AST.Helpers (getExprPos, defaultPos)
-import qualified Data.Map as M
+import AST.Helpers (defaultPos)
 
 inferProgram :: Program -> Either [TypeError] Program
 inferProgram (Program funcs) = do
@@ -14,13 +13,13 @@ inferProgram (Program funcs) = do
 
 inferAllFunctions :: [Function] -> Either [TypeError] [Function]
 inferAllFunctions funcs =
-  let funcEnv = collectFunctionSignatures funcs
-  in mapM (inferFunction funcEnv) funcs
+  let fEnv = collectFunctionSignatures funcs
+  in mapM (inferFunction fEnv) funcs
 
 -- single function
 inferFunction :: FuncEnv -> Function -> Either [TypeError] Function
-inferFunction funcEnv func = do
-  let env = makeFunctionEnv funcEnv func
+inferFunction fEnv func = do
+  let env = makeFunctionEnv fEnv func
   inferredBody <- inferStatements env (fBody func)
   return $ func { fBody = inferredBody }
 
