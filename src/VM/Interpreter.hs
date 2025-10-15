@@ -50,7 +50,7 @@ execute program funcIdx args =
     case getFunctionAt program funcIdx of
         Left err -> Left err
         Right func ->
-            let initialLocals = args ++ replicate (localVarCount func - length args) (VInt 0)
+            let initialLocals = args ++ replicate (localVarCount func) (VInt 0)
                 initialState = VMState {
                     stack = [],
                     locals = initialLocals,
