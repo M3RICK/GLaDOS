@@ -1,4 +1,7 @@
-module Security.ReturnChecker where
+module Security.ReturnChecker
+  ( listHasReturn
+  , statementHasReturn
+  ) where
 
 import AST.AST
 
