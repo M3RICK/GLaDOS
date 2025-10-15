@@ -1,4 +1,14 @@
-module Security.Environment where
+module Security.Environment
+  ( addVar
+  , lookupVar
+  , lookupFunc
+  , makeParamEnv
+  , makeFunctionEnv
+  , collectFunctionSignatures
+  , getFunctionSignature
+  , markInitialized
+  , isInitialized
+  ) where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
