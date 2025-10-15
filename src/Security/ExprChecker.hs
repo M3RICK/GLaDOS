@@ -1,4 +1,8 @@
-module Security.ExprChecker where
+module Security.ExprChecker
+  ( checkExpr
+  , checkExprValid
+  , getExprType
+  ) where
 
 import Text.Megaparsec.Pos (SourcePos)
 import Security.Types
@@ -30,33 +34,33 @@ getExprType env expr = case expr of
 
 -- Check reference
 checkVariable :: CheckEnv -> Located String -> Either TypeError Type
-checkVariable env (Located pos name) =
+checkVariable env (Located p name) =
   case lookupVar name env of
-    Nothing -> Left $ UndefinedVar name pos
-    Just typ -> validateInitialized env name pos typ
+    Nothing -> Left $ UndefinedVar name p
+    Just typ -> validateInitialized env name p typ
 
 -- Variable is initialized
 validateInitialized :: CheckEnv -> String -> SourcePos -> Type -> Either TypeError Type
-validateInitialized env name pos typ
+validateInitialized env name p typ
   | isInitialized name env = Right typ
-  | otherwise = Left $ UninitializedVar name pos
+  | otherwise = Left $ UninitializedVar name p
 
 checkFunctionCall :: CheckEnv -> Located String -> [Expr] -> Either TypeError Type
-checkFunctionCall env (Located pos name) args =
+checkFunctionCall env (Located p name) args =
   case lookupFunc name env of
-    Nothing -> Left (UndefinedFunc name pos)
+    Nothing -> Left (UndefinedFunc name p)
     Just (retType, paramTypes) ->
-      validateCall env name pos args paramTypes retType
+      validateCall env name p args paramTypes retType
 
 validateCall :: CheckEnv -> String -> SourcePos -> [Expr] -> [Type] -> Type -> Either TypeError Type
-validateCall env name pos args paramTypes retType =
-  case validateArgs env name pos args paramTypes of
+validateCall env name p args paramTypes retType =
+  case validateArgs env name p args paramTypes of
     Left err -> Left err
     Right _ -> Right retType
 
 validateArgs :: CheckEnv -> String -> SourcePos -> [Expr] -> [Type] -> Either TypeError ()
-validateArgs env name pos args paramTypes
-  | wrongCount = Left $ WrongArgCount name (length paramTypes) (length args) pos
+validateArgs env name p args paramTypes
+  | wrongCount = Left $ WrongArgCount name (length paramTypes) (length args) p
   | otherwise = checkArgTypes env args paramTypes
   where wrongCount = length args /= length paramTypes
 
@@ -68,7 +72,7 @@ checkArgTypes env args paramTypes =
         else Left (head errors)
 
 validateType :: Type -> Expr -> Type -> [TypeError]
-validateType expected expr actual =
-  if actual == expected
+validateType expectedType expr actualType =
+  if actualType == expectedType
     then []
-    else [TypeMismatch expected actual (getExprPos expr) ""]
+    else [TypeMismatch expectedType actualType (getExprPos expr) ""]
