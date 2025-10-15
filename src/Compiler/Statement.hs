@@ -13,7 +13,7 @@ compileStatement checkEnv funcTable varTable stmt = case stmt of
   Assign name expr -> compileAssign checkEnv funcTable varTable name expr
   If cond thenBody elseBody -> compileIf checkEnv funcTable varTable cond thenBody elseBody
   While cond body -> compileWhile checkEnv funcTable varTable cond body
-  For init cond update body -> compileFor checkEnv funcTable varTable init cond update body
+  For initStmt cond update body -> compileFor checkEnv funcTable varTable initStmt cond update body
   Return expr -> compileReturn checkEnv funcTable varTable expr
   ExprStmt expr -> compileExprStmt checkEnv funcTable varTable expr
 
@@ -148,7 +148,7 @@ compileForInit checkEnv funcTable varTable initStmt =
 
 -- for loop condition (faut check avant chaque iteration)
 compileForCondition :: CheckEnv -> FuncTable -> VarTable -> Maybe Expr -> [IR.Instruction]
-compileForCondition checkEnv funcTable varTable Nothing =
+compileForCondition _checkEnv _funcTable _varTable Nothing =
   [IR.PushBool True]  -- Alors infinite (void) si y a pas de conditions
 compileForCondition checkEnv funcTable varTable (Just cond) =
   compileExpr checkEnv funcTable varTable cond
