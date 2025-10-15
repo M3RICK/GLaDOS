@@ -1,4 +1,7 @@
-module Security.OperatorChecks where
+module Security.OperatorChecks
+  ( checkBinOp
+  , checkUnOp
+  ) where
 
 import Security.Types
 import AST.AST
@@ -34,7 +37,7 @@ getUnaryOperatorChecker op = case op of
 
 -- Numeric operations work on both Int and Float, return same type
 numericOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-numericOp env e1 e2 getType = do
+numericOp _ e1 e2 getType = do
   t1 <- getType e1
   t2 <- getType e2
   case (t1, t2) of
@@ -44,7 +47,7 @@ numericOp env e1 e2 getType = do
 
 -- Comparison operations work on both Int and Float, return Bool
 comparisonOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-comparisonOp env e1 e2 getType = do
+comparisonOp _ e1 e2 getType = do
   t1 <- getType e1
   t2 <- getType e2
   case (t1, t2) of
@@ -53,7 +56,7 @@ comparisonOp env e1 e2 getType = do
     _ -> Left (TypeMismatch t1 t2 (getExprPos e2) "on compare pas des patates et des tomates")
 
 equalityOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-equalityOp resultType env e1 e2 getType = do
+equalityOp resultType _ e1 e2 getType = do
   t1 <- getType e1
   t2 <- getType e2
   if t1 == t2
@@ -61,26 +64,26 @@ equalityOp resultType env e1 e2 getType = do
     else Left (TypeMismatch t1 t2 (getExprPos e2) "in equality")
 
 logicalOp :: Type -> CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-logicalOp resultType env e1 e2 getType = do
+logicalOp resultType _ e1 e2 getType = do
   requireType TypeBool e1 getType "in logical operation"
   requireType TypeBool e2 getType "in logical operation"
   return resultType
 
 requireType :: Type -> Expr -> (Expr -> Either TypeError Type) -> String -> Either TypeError ()
-requireType expected expr getType context = do
+requireType expectedType expr getType ctx = do
   actual <- getType expr
-  if actual == expected
+  if actual == expectedType
     then Right ()
-    else Left (TypeMismatch expected actual (getExprPos expr) context)
+    else Left (TypeMismatch expectedType actual (getExprPos expr) ctx)
 
 -- Check if expression is literal zero
 checkNotZero :: Expr -> Either TypeError ()
-checkNotZero (NumLit (Located pos 0)) = Left (DivisionByZero pos)
-checkNotZero (FloatLit (Located pos 0.0)) = Left (DivisionByZero pos)
+checkNotZero (NumLit (Located p 0)) = Left (DivisionByZero p)
+checkNotZero (FloatLit (Located p 0.0)) = Left (DivisionByZero p)
 checkNotZero _ = Right ()
 
 divisionOp :: CheckEnv -> Expr -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-divisionOp env e1 e2 getType = do
+divisionOp _ e1 e2 getType = do
   t1 <- getType e1
   t2 <- getType e2
   checkNotZero e2
@@ -91,7 +94,7 @@ divisionOp env e1 e2 getType = do
 
 -- Negation operation works on both Int and Float, returns same type
 negationOp :: CheckEnv -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-negationOp env e getType = do
+negationOp _ e getType = do
   t <- getType e
   case t of
     TypeInt -> return TypeInt
@@ -100,6 +103,6 @@ negationOp env e getType = do
 
 -- Logical not operation works on Bool, returns Bool
 notOp :: CheckEnv -> Expr -> (Expr -> Either TypeError Type) -> Either TypeError Type
-notOp env e getType = do
+notOp _ e getType = do
   requireType TypeBool e getType "in logical not"
   return TypeBool
