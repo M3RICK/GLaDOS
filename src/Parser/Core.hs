@@ -1,4 +1,4 @@
-module Parser.Core where
+module Parser.Core (parseProgram) where
 
 import Parser.Program
 import Parser.Lexer
