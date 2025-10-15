@@ -1,4 +1,10 @@
-module Security.Types where
+module Security.Types
+  ( VarEnv
+  , FuncEnv
+  , InitializedVars
+  , CheckEnv(..)
+  , TypeError(..)
+  ) where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -26,19 +32,9 @@ data CheckEnv = CheckEnv
 data TypeError
   = UndefinedVar String SourcePos
   | UndefinedFunc String SourcePos
-  | TypeMismatch
-      { expected :: Type
-      , got :: Type
-      , position :: SourcePos
-      , context :: String
-      }
+  | TypeMismatch Type Type SourcePos String  -- expected, got, position, context
   | AlreadyDefined String SourcePos
-  | WrongArgCount
-      { funcName :: String
-      , expectedCount :: Int
-      , gotCount :: Int
-      , position :: SourcePos
-      }
+  | WrongArgCount String Int Int SourcePos  -- funcName, expectedCount, gotCount, position
   | ReturnTypeMismatch Type Type SourcePos
   | UninitializedVar String SourcePos
   | MissingReturn String
