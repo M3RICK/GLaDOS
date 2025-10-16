@@ -12,6 +12,8 @@ import Compiler.Core (compileProgram, compileToText)
 import VM.Interpreter (execute)
 import IR.Types (mainIndex)
 import Bytecode.Serialize (serializeProgramToStdout, loadProgramFromFile)
+import qualified Error.Types
+import Error.Types (formatCompilerError)
 
 -- Exit with error code 84
 die :: String -> IO a
@@ -58,45 +60,54 @@ readStdinWithTimeout = timeout 1000000 (getContents >>= evaluate . force) >>= \r
 -- Default compile and execute
 runDefault :: String -> IO ()
 runDefault sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (wrapParseError parseErr)
     Right ast -> case checkProgram ast of
-        Left _ -> die "Type error"
-        Right validatedAst -> let irProgram = compileProgram validatedAst
-            in case execute irProgram (mainIndex irProgram) [] of
-                Left _ -> die "Runtime error"
+        Left typeErrs -> die (wrapTypeErrors typeErrs)
+        Right validatedAst -> case compileProgram validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irProgram -> case execute irProgram (mainIndex irProgram) [] of
+                Left runtimeErr -> die (wrapRuntimeError runtimeErr)
                 Right result -> print result
+  where
+    wrapParseError = formatCompilerError . Error.Types.wrapParseError
+    wrapTypeErrors = formatCompilerError . Error.Types.wrapTypeErrors
+    wrapRuntimeError = formatCompilerError . Error.Types.wrapRuntimeError
 
 -- Output AST only
 runAst :: String -> IO ()
 runAst sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
     Right ast -> print ast
 
 -- Output human-readable IR (disassembly)
 runIr :: String -> IO ()
 runIr sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
     Right ast -> case checkProgram ast of
-        Left _ -> die "Type error"
-        Right validatedAst -> putStrLn (compileToText validatedAst)
+        Left typeErrs -> die (formatCompilerError (Error.Types.wrapTypeErrors typeErrs))
+        Right validatedAst -> case compileToText validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irText -> putStrLn irText
 
 -- creates Bytecode
 runCompile :: String -> IO ()
 runCompile sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
     Right ast -> case checkProgram ast of
-        Left _ -> die "Type error"
-        Right validatedAst ->
-            let irProgram = compileProgram validatedAst
-            in serializeProgramToStdout irProgram
+        Left typeErrs -> die (formatCompilerError (Error.Types.wrapTypeErrors typeErrs))
+        Right validatedAst -> case compileProgram validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irProgram -> serializeProgramToStdout irProgram
 
 -- Loads existing Bytecode and executes
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
-    irProgram <- loadProgramFromFile path
-    case execute irProgram (mainIndex irProgram) [] of
-        Left err -> die $ "Runtime error: " ++ err
-        Right value -> print value
+    result <- loadProgramFromFile path
+    case result of
+        Left err -> die err
+        Right irProgram -> case execute irProgram (mainIndex irProgram) [] of
+            Left runtimeErr -> die $ formatCompilerError (Error.Types.wrapRuntimeError runtimeErr)
+            Right value -> print value
 
 -- Main entry point
 main :: IO ()
