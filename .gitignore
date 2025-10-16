@@ -8,3 +8,4 @@ glados
 *.gbc
 *.c
 docs/mdbook/book/
+tutorial.md
