@@ -84,15 +84,9 @@ makeLocalTable params body =
     paramCount = length params
 
 -- | Look up variable index in variable table
-lookupVar :: VarTable -> String -> Int
-lookupVar varTable name =
-  case M.lookup name varTable of
-    Just idx -> idx
-    Nothing -> error $ "Variable not in table: " ++ name
+lookupVar :: VarTable -> String -> Maybe Int
+lookupVar varTable name = M.lookup name varTable
 
 -- | Look up function index in function table
-lookupFunc :: FuncTable -> String -> Int
-lookupFunc funcTable name =
-  case M.lookup name funcTable of
-    Just idx -> idx
-    Nothing -> error $ "Function not in table: " ++ name
+lookupFunc :: FuncTable -> String -> Maybe Int
+lookupFunc funcTable name = M.lookup name funcTable
