@@ -46,7 +46,7 @@ extractDecl (Decl typ name _) = extractSimpleDecl typ name
 extractDecl (If _ thenBody maybeElse) = extractIfDecls thenBody maybeElse
 extractDecl (While _ body) = extractWhileDecls body
 extractDecl (For maybeInit _ _ body) = extractForDecls maybeInit body
-extractDecl _ = []  -- les autres instructions ne déclarent rien
+extractDecl _ = []
 
 -- Extract a simple variable declaration
 extractSimpleDecl :: Type -> String -> [(String, Type)]
@@ -84,9 +84,15 @@ makeLocalTable params body =
     paramCount = length params
 
 -- | Look up variable index in variable table
-lookupVar :: VarTable -> String -> Maybe Int
-lookupVar varTable name = M.lookup name varTable
+lookupVar :: VarTable -> String -> Int
+lookupVar varTable name =
+  case M.lookup name varTable of
+    Just idx -> idx
+    Nothing -> error $ "Variable not in table: " ++ name
 
 -- | Look up function index in function table
-lookupFunc :: FuncTable -> String -> Maybe Int
-lookupFunc funcTable name = M.lookup name funcTable
+lookupFunc :: FuncTable -> String -> Int
+lookupFunc funcTable name =
+  case M.lookup name funcTable of
+    Just idx -> idx
+    Nothing -> error $ "Function not in table: " ++ name
