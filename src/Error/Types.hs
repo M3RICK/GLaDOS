@@ -7,7 +7,7 @@ module Error.Types
   ) where
 
 import Security.Types (TypeError)
-import Security.ErrorFormat (formatError, formatTypeErrors)
+import Security.ErrorFormat (formatTypeErrors)
 import Text.Megaparsec (ParseErrorBundle, errorBundlePretty)
 import Text.Megaparsec.Pos (SourcePos)
 import Data.Void (Void)
