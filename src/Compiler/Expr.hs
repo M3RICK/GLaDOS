@@ -5,18 +5,21 @@ import AST.AST
 import Compiler.Environment
 import Security.ExprChecker (getExprType)
 import Security.Types (CheckEnv)
+import Error.Types (CompilerError(..))
+import Text.Megaparsec.Pos (SourcePos)
 
 -- Compile an expression into IR instructions
-compileExpr :: CheckEnv -> FuncTable -> VarTable -> Expr -> [IR.Instruction]
+-- Returns Either CompilerError if compilation fails (shouldn't happen after type checking)
+compileExpr :: CheckEnv -> FuncTable -> VarTable -> Expr -> Either CompilerError [IR.Instruction]
 compileExpr checkEnv funcTable varTable expr = case expr of
-  BoolLit (Located _ b) -> compileBoolLit b
-  NumLit (Located _ n) -> compileNumLit n
-  FloatLit (Located _ f) -> compileFloatLit f
-  Var (Located _ name) -> compileVar varTable name
-  BinOp op (Located _ e1) (Located _ e2) ->
-    compileBinOp checkEnv funcTable varTable op e1 e2
-  UnOp op (Located _ e) ->
-    compileUnOp checkEnv funcTable varTable op e
+  BoolLit (Located _ b) -> Right (compileBoolLit b)
+  NumLit (Located _ n) -> Right (compileNumLit n)
+  FloatLit (Located _ f) -> Right (compileFloatLit f)
+  Var (Located _ name) -> Right (compileVar varTable name)
+  BinOp op (Located pos e1) (Located _ e2) ->
+    compileBinOp checkEnv funcTable varTable op pos e1 e2
+  UnOp op (Located pos e) ->
+    compileUnOp checkEnv funcTable varTable op pos e
   Call (Located _ name) args ->
     compileCall checkEnv funcTable varTable name args
 
@@ -32,98 +35,110 @@ compileFloatLit f = [IR.PushFloat f]
 compileVar :: VarTable -> String -> [IR.Instruction]
 compileVar varTable name = [IR.GetLocal (lookupVar varTable name)]
 
-compileBinOp :: CheckEnv -> FuncTable -> VarTable -> Op -> Expr -> Expr -> [IR.Instruction]
-compileBinOp checkEnv funcTable varTable op e1 e2 =
-  compileBothOperands checkEnv funcTable varTable e1 e2 ++
-  [selectOpInstruction checkEnv op e1]
+compileBinOp :: CheckEnv -> FuncTable -> VarTable -> Op -> SourcePos -> Expr -> Expr -> Either CompilerError [IR.Instruction]
+compileBinOp checkEnv funcTable varTable op pos e1 e2 =
+  case compileBothOperands checkEnv funcTable varTable e1 e2 of
+    Left err -> Left err
+    Right operands -> case selectOpInstruction checkEnv op pos e1 of
+      Left err -> Left err
+      Right opInstr -> Right (operands ++ [opInstr])
 
-compileUnOp :: CheckEnv -> FuncTable -> VarTable -> UnOp -> Expr -> [IR.Instruction]
-compileUnOp checkEnv funcTable varTable op e =
-  compileExpr checkEnv funcTable varTable e ++
-  [selectUnOpInstruction checkEnv op e]
+compileUnOp :: CheckEnv -> FuncTable -> VarTable -> UnOp -> SourcePos -> Expr -> Either CompilerError [IR.Instruction]
+compileUnOp checkEnv funcTable varTable op pos e =
+  case compileExpr checkEnv funcTable varTable e of
+    Left err -> Left err
+    Right exprCode -> case selectUnOpInstruction checkEnv op pos e of
+      Left err -> Left err
+      Right opInstr -> Right (exprCode ++ [opInstr])
 
-compileBothOperands :: CheckEnv -> FuncTable -> VarTable -> Expr -> Expr -> [IR.Instruction]
+compileBothOperands :: CheckEnv -> FuncTable -> VarTable -> Expr -> Expr -> Either CompilerError [IR.Instruction]
 compileBothOperands checkEnv funcTable varTable e1 e2 =
-  compileExpr checkEnv funcTable varTable e1 ++
-  compileExpr checkEnv funcTable varTable e2
+  case compileExpr checkEnv funcTable varTable e1 of
+    Left err -> Left err
+    Right code1 -> case compileExpr checkEnv funcTable varTable e2 of
+      Left err -> Left err
+      Right code2 -> Right (code1 ++ code2)
 
 -- Choose your instruction for an operator based on the operand type
-selectOpInstruction :: CheckEnv -> Op -> Expr -> IR.Instruction
-selectOpInstruction checkEnv op expr =
+selectOpInstruction :: CheckEnv -> Op -> SourcePos -> Expr -> Either CompilerError IR.Instruction
+selectOpInstruction checkEnv op pos expr =
   case getExprType checkEnv expr of
-    Right TypeFloat -> selectFloatOp op
-    Right TypeInt -> selectIntOp op
-    Right TypeBool -> selectBoolOp op
-    Left err -> error $ "Type error during compilation: " ++ show err
-    Right other -> error $ "Unexpected type for operation: " ++ show other
+    Right TypeFloat -> selectFloatOp op pos
+    Right TypeInt -> selectIntOp op pos
+    Right TypeBool -> selectBoolOp op pos
+    Left err -> Left (TypeErrors [err])
+    Right other -> Left (CompileError ("Unexpected type for operation: " ++ show other) pos)
 
-selectIntOp :: Op -> IR.Instruction
-selectIntOp Add = IR.AddInt
-selectIntOp Sub = IR.SubInt
-selectIntOp Mul = IR.MulInt
-selectIntOp Div = IR.DivInt
-selectIntOp Eq = IR.EqInt
-selectIntOp Neq = IR.NeqInt
-selectIntOp Lt = IR.LtInt
-selectIntOp Gt = IR.GtInt
-selectIntOp Le = IR.LeInt
-selectIntOp Ge = IR.GeInt
-selectIntOp _ = error "Invalid int operation"
+selectIntOp :: Op -> SourcePos -> Either CompilerError IR.Instruction
+selectIntOp Add _ = Right IR.AddInt
+selectIntOp Sub _ = Right IR.SubInt
+selectIntOp Mul _ = Right IR.MulInt
+selectIntOp Div _ = Right IR.DivInt
+selectIntOp Eq _ = Right IR.EqInt
+selectIntOp Neq _ = Right IR.NeqInt
+selectIntOp Lt _ = Right IR.LtInt
+selectIntOp Gt _ = Right IR.GtInt
+selectIntOp Le _ = Right IR.LeInt
+selectIntOp Ge _ = Right IR.GeInt
+selectIntOp op pos = Left (CompileError ("Invalid int operation: " ++ show op) pos)
 
-selectFloatOp :: Op -> IR.Instruction
-selectFloatOp Add = IR.AddFloat
-selectFloatOp Sub = IR.SubFloat
-selectFloatOp Mul = IR.MulFloat
-selectFloatOp Div = IR.DivFloat
-selectFloatOp Eq = IR.EqFloat
-selectFloatOp Neq = IR.NeqFloat
-selectFloatOp Lt = IR.LtFloat
-selectFloatOp Gt = IR.GtFloat
-selectFloatOp Le = IR.LeFloat
-selectFloatOp Ge = IR.GeFloat
-selectFloatOp _ = error "Invalid float operation"
+selectFloatOp :: Op -> SourcePos -> Either CompilerError IR.Instruction
+selectFloatOp Add _ = Right IR.AddFloat
+selectFloatOp Sub _ = Right IR.SubFloat
+selectFloatOp Mul _ = Right IR.MulFloat
+selectFloatOp Div _ = Right IR.DivFloat
+selectFloatOp Eq _ = Right IR.EqFloat
+selectFloatOp Neq _ = Right IR.NeqFloat
+selectFloatOp Lt _ = Right IR.LtFloat
+selectFloatOp Gt _ = Right IR.GtFloat
+selectFloatOp Le _ = Right IR.LeFloat
+selectFloatOp Ge _ = Right IR.GeFloat
+selectFloatOp op pos = Left (CompileError ("Invalid float operation: " ++ show op) pos)
 
-selectBoolOp :: Op -> IR.Instruction
-selectBoolOp And = IR.AndBool
-selectBoolOp Or = IR.OrBool
-selectBoolOp _ = error "Invalid bool operation"
+selectBoolOp :: Op -> SourcePos -> Either CompilerError IR.Instruction
+selectBoolOp And _ = Right IR.AndBool
+selectBoolOp Or _ = Right IR.OrBool
+selectBoolOp op pos = Left (CompileError ("Invalid bool operation: " ++ show op) pos)
 
 -- Choose instruction for unary operator based on operand type
-selectUnOpInstruction :: CheckEnv -> UnOp -> Expr -> IR.Instruction
-selectUnOpInstruction checkEnv op expr =
+selectUnOpInstruction :: CheckEnv -> UnOp -> SourcePos -> Expr -> Either CompilerError IR.Instruction
+selectUnOpInstruction checkEnv op pos expr =
   case getExprType checkEnv expr of
-    Right TypeFloat -> selectFloatUnOp op
-    Right TypeInt -> selectIntUnOp op
-    Right TypeBool -> selectBoolUnOp op
-    Left err -> error $ "Type error during compilation: " ++ show err
-    Right other -> error $ "Unexpected type for unary operation: " ++ show other
+    Right TypeFloat -> selectFloatUnOp op pos
+    Right TypeInt -> selectIntUnOp op pos
+    Right TypeBool -> selectBoolUnOp op pos
+    Left err -> Left (TypeErrors [err])
+    Right other -> Left (CompileError ("Unexpected type for unary operation: " ++ show other) pos)
 
-selectIntUnOp :: UnOp -> IR.Instruction
-selectIntUnOp Neg = IR.NegInt
-selectIntUnOp _ = error "Invalid int unary operation"
+selectIntUnOp :: UnOp -> SourcePos -> Either CompilerError IR.Instruction
+selectIntUnOp Neg _ = Right IR.NegInt
+selectIntUnOp op pos = Left (CompileError ("Invalid int unary operation: " ++ show op) pos)
 
-selectFloatUnOp :: UnOp -> IR.Instruction
-selectFloatUnOp Neg = IR.NegFloat
-selectFloatUnOp _ = error "Invalid float unary operation"
+selectFloatUnOp :: UnOp -> SourcePos -> Either CompilerError IR.Instruction
+selectFloatUnOp Neg _ = Right IR.NegFloat
+selectFloatUnOp op pos = Left (CompileError ("Invalid float unary operation: " ++ show op) pos)
 
-selectBoolUnOp :: UnOp -> IR.Instruction
-selectBoolUnOp Not = IR.NotBool
-selectBoolUnOp _ = error "Invalid bool unary operation"
+selectBoolUnOp :: UnOp -> SourcePos -> Either CompilerError IR.Instruction
+selectBoolUnOp Not _ = Right IR.NotBool
+selectBoolUnOp op pos = Left (CompileError ("Invalid bool unary operation: " ++ show op) pos)
 
 -- Compile function call
-compileCall :: CheckEnv -> FuncTable -> VarTable -> String -> [Expr] -> [IR.Instruction]
+compileCall :: CheckEnv -> FuncTable -> VarTable -> String -> [Expr] -> Either CompilerError [IR.Instruction]
 compileCall checkEnv funcTable varTable name args =
   compileArgumentsAndCall checkEnv funcTable varTable name args
 
-compileArgumentsAndCall :: CheckEnv -> FuncTable -> VarTable -> String -> [Expr] -> [IR.Instruction]
+compileArgumentsAndCall :: CheckEnv -> FuncTable -> VarTable -> String -> [Expr] -> Either CompilerError [IR.Instruction]
 compileArgumentsAndCall checkEnv funcTable varTable name args =
-  compileAllArguments checkEnv funcTable varTable args ++
-  [createCallInstruction funcTable name]
+  case compileAllArguments checkEnv funcTable varTable args of
+    Left err -> Left err
+    Right argCode -> Right (argCode ++ [createCallInstruction funcTable name])
 
 -- compile tout les fonction args de gauche a droite
-compileAllArguments :: CheckEnv -> FuncTable -> VarTable -> [Expr] -> [IR.Instruction]
+compileAllArguments :: CheckEnv -> FuncTable -> VarTable -> [Expr] -> Either CompilerError [IR.Instruction]
 compileAllArguments checkEnv funcTable varTable args =
-  concatMap (compileExpr checkEnv funcTable varTable) args
+  case mapM (compileExpr checkEnv funcTable varTable) args of
+    Left err -> Left err
+    Right argCodes -> Right (concat argCodes)
 
 createCallInstruction :: FuncTable -> String -> IR.Instruction
 createCallInstruction funcTable name =
