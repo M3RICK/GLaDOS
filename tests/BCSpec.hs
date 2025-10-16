@@ -9,7 +9,9 @@ import IR.Types
 
 -- Helper: Serialize and deserialize (round-trip test)
 roundTrip :: IRProgram -> IRProgram
-roundTrip program = deserializeProgram (serializeProgram program)
+roundTrip program = case deserializeProgram (serializeProgram program) of
+    Right p -> p
+    Left err -> error $ "Round trip failed: " ++ err
 
 spec :: Spec
 spec = do
@@ -60,8 +62,9 @@ spec = do
                 }
                 let program = IRProgram {functions = [func], mainIndex = 0}
                 let bytes = serializeProgram program
-                let result = deserializeProgram bytes
-                funcName (head (functions result)) `shouldBe` "main"
+                case deserializeProgram bytes of
+                    Right result -> funcName (head (functions result)) `shouldBe` "main"
+                    Left err -> error $ "Deserialization failed: " ++ err
 
             it "deserializes program with multiple functions" $ do
                 let func1 = CompiledFunction {
@@ -78,8 +81,9 @@ spec = do
                 }
                 let program = IRProgram {functions = [func1, func2], mainIndex = 1}
                 let bytes = serializeProgram program
-                let result = deserializeProgram bytes
-                length (functions result) `shouldBe` 2
+                case deserializeProgram bytes of
+                    Right result -> length (functions result) `shouldBe` 2
+                    Left err -> error $ "Deserialization failed: " ++ err
 
 -- ============================================================================
 -- Round-Trip Tests
@@ -393,7 +397,11 @@ spec = do
             }
             let program = IRProgram {functions = [func], mainIndex = 0}
             let testFile = "/tmp/test_bytecode.gbc"
-            saveProgramToFile testFile program
-            loadedProgram <- loadProgramFromFile testFile
-            funcName (head (functions loadedProgram)) `shouldBe` "test"
-            code (head (functions loadedProgram)) `shouldBe` [PushInt 99, Halt]
+            saveResult <- saveProgramToFile testFile program
+            loadResult <- loadProgramFromFile testFile
+            case (saveResult, loadResult) of
+                (Right (), Right loadedProgram) -> do
+                    funcName (head (functions loadedProgram)) `shouldBe` "test"
+                    code (head (functions loadedProgram)) `shouldBe` [PushInt 99, Halt]
+                (Left err, _) -> error $ "Failed to save: " ++ err
+                (_, Left err) -> error $ "Failed to load: " ++ err
