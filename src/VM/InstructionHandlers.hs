@@ -47,6 +47,23 @@ executeArithOp instr state = case instr of
             else case popInt state1 of
                 Left err -> Left err
                 Right (a, state2) -> Right (push (VInt (a `div` b)) state2)
+    AddFloat -> binaryFloatOp (+) state
+    SubFloat -> binaryFloatOp (-) state
+    MulFloat -> binaryFloatOp (*) state
+    DivFloat -> case popFloat state of
+        Left err -> Left err
+        Right (b, state1) ->
+            if b == 0.0
+            then Left "Runtime error: Division by zero"
+            else case popFloat state1 of
+                Left err -> Left err
+                Right (a, state2) -> Right (push (VFloat (a / b)) state2)
+    NegInt -> case popInt state of
+        Left err -> Left err
+        Right (n, newState) -> Right (push (VInt (-n)) newState)
+    NegFloat -> case popFloat state of
+        Left err -> Left err
+        Right (n, newState) -> Right (push (VFloat (-n)) newState)
     _ -> Left "Internal error: not an arithmetic operation"
 
 -- Comparaison
@@ -58,6 +75,12 @@ executeCompOp instr state = case instr of
     GtInt -> compareInts (>) state
     LeInt -> compareInts (<=) state
     GeInt -> compareInts (>=) state
+    EqFloat -> compareFloats (==) state
+    NeqFloat -> compareFloats (/=) state
+    LtFloat -> compareFloats (<) state
+    GtFloat -> compareFloats (>) state
+    LeFloat -> compareFloats (<=) state
+    GeFloat -> compareFloats (>=) state
     _ -> Left "Internal error: not a comparison operation"
 
 -- &&/||
@@ -65,6 +88,9 @@ executeLogicOp :: Instruction -> VMState -> VMResult VMState
 executeLogicOp instr state = case instr of
     AndBool -> binaryBoolOp (&&) state
     OrBool -> binaryBoolOp (||) state
+    NotBool -> case popBool state of
+        Left err -> Left err
+        Right (b, newState) -> Right (push (VBool (not b)) newState)
     _ -> Left "Internal error: not a logical operation"
 
 -- Flow op
