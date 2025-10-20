@@ -127,3 +127,5 @@ main = do
         ["--compile"] -> readStdinWithTimeout >>= runCompile
         ["--run", f] -> runBytecode f
         _ -> die "Invalid arguments. Use --help for usage information."
+
+-- TODO: Create Hspec test cases for float operations (arithmetic, comparisons, type checking)
