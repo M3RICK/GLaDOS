@@ -84,6 +84,14 @@ popBool state = case pop state of
     Right (VFloat _, _) -> Left "Type error: expected Bool, got Float"
     Left err -> Left err
 
+-- Pop and type-check for Float
+popFloat :: VMState -> VMResult (Double, VMState)
+popFloat state = case pop state of
+    Right (VFloat f, newState) -> Right (f, newState)
+    Right (VInt _, _) -> Left "Type error: expected Float, got Int"
+    Right (VBool _, _) -> Left "Type error: expected Float, got Bool"
+    Left err -> Left err
+
 -- BinOp does as follows pop 2 ints, apply op, push result
 binaryIntOp :: (Int -> Int -> Int) -> VMState -> VMResult VMState
 binaryIntOp op state =
@@ -99,6 +107,24 @@ compareInts cmp state =
     case popInt state of
         Left err -> Left err
         Right (b, state1) -> case popInt state1 of
+            Left err -> Left err
+            Right (a, state2) -> Right (push (VBool (a `cmp` b)) state2)
+
+-- BinOp for floats pop 2 floats, apply op, push result
+binaryFloatOp :: (Double -> Double -> Double) -> VMState -> VMResult VMState
+binaryFloatOp op state =
+    case popFloat state of
+        Left err -> Left err
+        Right (b, state1) -> case popFloat state1 of
+            Left err -> Left err
+            Right (a, state2) -> Right (push (VFloat (a `op` b)) state2)
+
+-- Compare floats
+compareFloats :: (Double -> Double -> Bool) -> VMState -> VMResult VMState
+compareFloats cmp state =
+    case popFloat state of
+        Left err -> Left err
+        Right (b, state1) -> case popFloat state1 of
             Left err -> Left err
             Right (a, state2) -> Right (push (VBool (a `cmp` b)) state2)
 
