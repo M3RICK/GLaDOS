@@ -1,6 +1,6 @@
-# Getting Started
+# Installation
 
-This guide will help you set up GLaDOS on your system and write your first program.
+This guide will help you set up GLaDOS on your system.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ sudo dnf install gcc gcc-c++ gmp-devel make ncurses-devel zlib-devel
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:EpitechPGE3-2025/G-FUN-500-TLS-5-1-glados-2.git
 cd glados
 ```
 
@@ -53,7 +53,7 @@ cd glados
 **First time setup** (installs GHC and dependencies):
 ```bash
 stack setup
-stack build --dependencies-only
+stack build
 ```
 
 **Build the compiler:**
@@ -70,71 +70,10 @@ The compiled binary will be named `glados` in your project root.
 ### 3. Verify Installation
 
 ```bash
-./glados --version  # (if you added version flag)
+./glados --version  # (version flag still not implemented, please use --help in the meantime)
 # Or test with a simple program
 echo 'int main() { return 42; }' | ./glados
 ```
-
-## Your First Program
-
-Create a file called `hello.c`:
-
-```c
-int main() {
-    int x = 5;
-    int y = 10;
-    int result = x + y;
-    return result;
-}
-```
-
-### Compile and Run
-
-```bash
-./glados < hello.c
-```
-
-**Expected output:**
-```
-15
-```
-
-## Quick Examples
-
-### Factorial
-
-```c
-int factorial(int n) {
-    if (n <= 1) {
-        return 1;
-    }
-    return n * factorial(n - 1);
-}
-
-int main() {
-    int result = factorial(5);
-    return result;
-}
-```
-
-Output: `120`
-
-### Fibonacci
-
-```c
-int fib(int n) {
-    if (n <= 1) {
-        return n;
-    }
-    return fib(n - 1) + fib(n - 2);
-}
-
-int main() {
-    return fib(10);
-}
-```
-
-Output: `55`
 
 ## Development Workflow
 
@@ -161,6 +100,5 @@ make re
 
 ## Next Steps
 
-- Read the [Syntax](./syntax.md) guide to learn the language
+- Write [Your First Program](./first-program.md)
 - Check out [Examples](./examples.md) for more programs
-- Learn about [Error Messages](./error-messages.md) to debug your code

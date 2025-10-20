@@ -261,22 +261,38 @@ int x = 42;  // End-of-line comment
 
 ## Semicolons
 
-Semicolons are **optional** in most cases but recommended for clarity:
+Following in the footsteps of King Terry Davis and HolyC, **semicolons are completely optional** in GLaDOS. We know this might make some of you anxious, but the program will run either way - even if they're mixed up in the same function!
 
 ```c
-// Both valid:
+// All of these are valid:
+
+// With semicolons (if you like them)
+int x = 5;
+int y = 10;
+return x + y;
+
+// Without semicolons (HolyC style)
+int x = 5
+int y = 10
+return x + y
+
+// Mixed (because why not?)
 int x = 5;
 int y = 10
+return x + y;
 
-// Required after declarations and assignments:
-int x = 5;
-x = 10;
-
-// Not required after control structures:
+// Even in control structures
 if (x > 0) {
     return x
 }
+
+// Or with semicolons if you prefer
+if (x > 0) {
+    return x;
+}
 ```
+
+Use them, don't use them, mix them - GLaDOS doesn't judge. Code the way Terry intended: free.
 
 ## Function Calls
 

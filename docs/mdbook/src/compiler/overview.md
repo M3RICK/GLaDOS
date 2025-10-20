@@ -1,5 +1,7 @@
 # Compilation Overview
 
+> **WARNING**: This page is still being completed. Some of the information is false and filled with temporary dummy information.
+
 GLaDOS is a compiled language that transforms source code through multiple stages to produce executable bytecode. This page provides a high-level overview of the compilation pipeline.
 
 ## Compilation Pipeline
@@ -17,21 +19,19 @@ Source Code (.c file)
        ↓
   Abstract Syntax Tree (AST)
        ↓
-  [3. Security Analysis]
+  [3. IR Generation]
        ↓
-  Validated AST
+  IR (Human-Readable Disassembly)
+  (can be outputted with flag)
        ↓
-  [4. Type Checking]
+  [4. Bytecode Generation]
        ↓
-  Type-Safe AST
+    Bytecode
+  (can be outputted with flag)
        ↓
-  [5. IR Generation]
+  [5. VM Execution]
        ↓
-  Intermediate Representation (IR)
-       ↓
-  [6. VM Execution]
-       ↓
-    Result (int)
+    Result
 ```
 
 ## Stage 1: Lexical Analysis (Lexing)
@@ -101,63 +101,13 @@ Program
 - Error recovery and reporting
 - Expression nesting support
 
-## Stage 3: Security Analysis
+## Stage 3: IR Generation
 
 **Input**: AST
-**Output**: Validated AST
-**Module**: `Security.hs`
-
-The security analyzer performs static analysis to catch potential issues:
-
-**Checks performed:**
-1. **Division by zero detection** (for literal divisors)
-2. **Function signature validation**
-3. **Program structure validation** (requires `main` function)
-
-**Example:**
-```c
-// ✗ SECURITY ERROR: Division by zero detected
-int main() {
-    return 10 / 0;  // Caught at compile time!
-}
-```
-
-## Stage 4: Type Checking
-
-**Input**: Validated AST
-**Output**: Type-safe AST
+**Output**: Human-Readable IR (Disassembly)
 **Module**: `Compiler.hs`
 
-The type checker verifies type correctness throughout the program:
-
-**Checks performed:**
-1. **Type inference**: Determine expression types
-2. **Type compatibility**: Verify operations use correct types
-3. **Initialization tracking**: Ensure variables are initialized before use
-4. **Return path analysis**: Verify all code paths return correct type
-5. **Function call validation**: Check argument types and count
-
-**Example:**
-```c
-// ✗ TYPE ERROR: expected int but got bool
-int main() {
-    int x = true;  // Type mismatch caught!
-    return x;
-}
-```
-
-**Type Environment:**
-- **Global environment**: Function signatures
-- **Local environment**: Variable types and initialization status
-- **Return type tracking**: Expected return type for current function
-
-## Stage 5: IR Generation
-
-**Input**: Type-safe AST
-**Output**: Intermediate Representation (IR)
-**Module**: `Compiler.hs`
-
-The compiler translates the AST into a lower-level IR suitable for execution:
+The compiler translates the AST into an intermediate representation (IR) - a human-readable disassembly format that represents the program's instructions:
 
 **IR Instructions:**
 - `Push <value>`: Push value onto stack
@@ -181,23 +131,37 @@ int add(int a, int b) {
 }
 ```
 
-**IR:**
-```haskell
-[ Label "add"
-, Load "a"
-, Load "b"
-, Add
-, Return
-]
+**IR (Human-Readable):**
+```
+Label "add"
+Load "a"
+Load "b"
+Add
+Return
 ```
 
-## Stage 6: VM Execution
+This IR can be outputted using the appropriate compiler flag for debugging and inspection purposes.
 
-**Input**: IR instructions
-**Output**: Program result (int)
+## Stage 4: Bytecode Generation
+
+**Input**: IR (Human-Readable)
+**Output**: Bytecode
+**Module**: `Compiler.hs`
+
+The IR is then compiled into compact bytecode format suitable for efficient execution by the VM. This bytecode can also be outputted with a flag for inspection.
+
+**Bytecode Format:**
+- Binary representation of IR instructions
+- Optimized for fast execution
+- Can be saved to disk and loaded later
+
+## Stage 5: VM Execution
+
+**Input**: Bytecode
+**Output**: Program result
 **Module**: `VM.hs`
 
-The virtual machine executes IR instructions using a stack-based model:
+The virtual machine executes the bytecode using a stack-based model:
 
 **VM Components:**
 - **Instruction Stack**: Current execution sequence
@@ -246,22 +210,11 @@ Parse error: unexpected token at line 5
 Parse error: unexpected end of input
 ```
 
-### Security Errors
-```
-Division by zero at line 3
-```
-
-### Type Errors
-```
-Type error at line 5: expected int but got bool
-Undefined variable 'x' at line 7
-Function 'foo' expects 2 arguments but got 1 at line 10
-```
-
 ### Runtime Errors
 ```
 Runtime error: Division by zero
 Runtime error: Stack underflow
+Runtime error: Undefined function
 ```
 
 ## Compiler Architecture
@@ -273,21 +226,28 @@ glados/
 ├── src/
 │   ├── AST.hs              # AST data types
 │   ├── Parser.hs           # Lexer and parser
-│   ├── Security.hs         # Security analysis
-│   ├── Compiler.hs         # Type checking + IR generation
+│   ├── Compiler.hs         # IR generation
 │   ├── IR.hs               # IR data types
+│   ├── Bytecode.hs         # Bytecode generation
 │   ├── VM.hs               # Virtual machine
 │   └── Main.hs             # Entry point
 ```
 
 ### Data Flow
 
-1. **Main.hs**: Reads source code from stdin
+1. **Main.hs**: Reads source code from stdin or file
 2. **Parser.hs**: Lexes and parses into AST
-3. **Security.hs**: Validates AST for security issues
-4. **Compiler.hs**: Type checks and generates IR
-5. **VM.hs**: Executes IR and produces result
+3. **Compiler.hs**: Generates IR (human-readable disassembly)
+4. **Bytecode.hs**: Compiles IR into bytecode
+5. **VM.hs**: Executes bytecode and produces result
 6. **Main.hs**: Prints result or error (exit code 0 or 84)
+
+### Compiler Flags
+
+The compiler supports flags to output intermediate stages:
+- **IR flag**: Output human-readable IR disassembly
+- **Bytecode flag**: Output compiled bytecode
+- These are useful for debugging and understanding compilation
 
 ## Implementation Details
 
@@ -310,24 +270,20 @@ functionDef = do
   return $ FuncDef name returnType params body
 ```
 
-### Type Checking Algorithm
-
-The type checker uses **environment-based inference**:
-
-1. Build global environment with function signatures
-2. For each function:
-   - Initialize local environment
-   - Track variable initialization status
-   - Infer expression types bottom-up
-   - Verify type constraints
-   - Check all paths return
-
 ### IR Design
 
-The IR is a **stack-based bytecode**:
+The IR is a **human-readable disassembly format**:
 - Simple to generate from AST
-- Easy to execute in VM
-- Compact representation
+- Easy to debug and inspect
+- Clear representation of program flow
+- Can be saved and examined independently
+
+### Bytecode Format
+
+Bytecode is the **binary compiled format**:
+- Compact and efficient
+- Fast to execute in VM
+- Can be saved to disk
 - No complex register allocation
 
 ### VM Design
@@ -343,8 +299,8 @@ The VM uses a **stack machine architecture**:
 ### Compilation Time
 
 - **Lexing/Parsing**: O(n) where n is source length
-- **Type Checking**: O(n) where n is AST size
 - **IR Generation**: O(n) where n is AST size
+- **Bytecode Generation**: O(n) where n is IR size
 - **Total**: Linear in source code size
 
 ### Runtime Performance
@@ -359,13 +315,12 @@ The VM uses a **stack machine architecture**:
 GLaDOS follows standard EPITECH conventions:
 
 - **0**: Success (program compiled and ran successfully)
-- **84**: Error (parse error, type error, or runtime error)
+- **84**: Error (parse error or runtime error)
 
 ## Next Steps
 
 To learn more about each compilation stage:
 
 - [Parsing](./parsing.md): Detailed parser implementation
-- [Type Checking](./type-checking.md): Type system rules and algorithm
 - [IR Generation](./ir-generation.md): IR instruction set and generation
 - [VM Execution](./vm-execution.md): Virtual machine implementation

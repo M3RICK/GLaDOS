@@ -1,5 +1,7 @@
 # VM Execution
 
+> **WARNING**: This page is still being completed. Some of the information is false and filled with temporary dummy information. The actual VM implementation uses a custom WebAssembly-like format that differs from what is documented here.
+
 This page details the GLaDOS Virtual Machine (VM), which executes the compiled IR bytecode using a stack-based architecture.
 
 ## Overview

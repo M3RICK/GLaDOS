@@ -1,5 +1,7 @@
 # Error Messages
 
+> **TODO**: Update warnings to most recent polished warnings.
+
 GLaDOS provides detailed error messages to help you debug your programs. This guide explains common errors and how to fix them.
 
 ## Compile-Time Errors

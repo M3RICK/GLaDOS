@@ -33,8 +33,6 @@ Aymeric built the complete parsing infrastructure using Megaparsec, implementing
 
 ---
 
-## Additional Contributors
-
 ### Sven R.
 **Role:** TBD
 
@@ -59,10 +57,10 @@ Aymeric built the complete parsing infrastructure using Megaparsec, implementing
 ## Project Statistics
 
 - **Language:** Haskell (GHC 9.6.3)
-- **Lines of Code:** ~3,000+ (source code only)
-- **Test Coverage:** Comprehensive VM and integration tests
-- **Documentation Pages:** 15+ detailed guides
-- **Compilation Stages:** 6 (Lexing → Parsing → Type Checking → IR Generation → VM Execution)
+- **Completion Percentage:** 98%
+- **Test Coverage:** .c test files ready to be executed by .sh scripts + HSpec test files
+- **Doc Status:** 75%
+- **Compilation Stages:** 6 (Lexing → Parsing → Type Checking → IR Generation → VM Execution) _outdated_
 
 ---
 

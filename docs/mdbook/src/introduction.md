@@ -33,7 +33,7 @@ int main() {
 
 ## Project Goals
 
-This language was designed to prevent common programming errors found in C while maintaining similar syntax and performance characteristics.
+GLaDOS aims to recreate HolyC (the programming language created by Terry A. Davis for TempleOS) with our own fun twists. While maintaining the spirit of a simple, powerful systems language, we've added modern safety features and improvements.
 
 ## Technologies Used
 
@@ -47,4 +47,4 @@ This language was designed to prevent common programming errors found in C while
 
 ### Why Haskell?
 
-Haskell's strong type system and functional programming paradigms make it ideal for building compilers and type checkers. The language naturally lends itself to writing correct, maintainable compiler infrastructure.
+Haskell's strong type system and functional programming paradigms make it an excellent choice for building compilers and type checkers. The language naturally lends itself to writing correct, maintainable compiler infrastructure. That said, the choice of Haskell was also imposed by our school, EPITECH, as part of the curriculum requirements for this project.

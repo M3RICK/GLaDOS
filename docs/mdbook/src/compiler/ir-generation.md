@@ -1,5 +1,7 @@
 # IR Generation
 
+> **WARNING**: This page is still being completed. Some of the information is false and filled with temporary dummy information. The actual IR syntax has changed significantly from what is documented here, as a custom WebAssembly-like format was created for this project.
+
 This page details how GLaDOS translates the type-checked AST into Intermediate Representation (IR), a stack-based bytecode suitable for VM execution.
 
 ## Overview

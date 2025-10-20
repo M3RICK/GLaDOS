@@ -2,31 +2,35 @@
 
 [Introduction](./introduction.md)
 
-# User Guide
+# Getting Started
 
-- [Getting Started](./user-guide/getting-started.md)
-- [Syntax](./user-guide/syntax.md)
-- [Examples](./user-guide/examples.md)
-- [Error Messages](./user-guide/error-messages.md)
+- [Installation](./getting-started/installation.md)
+- [Your First Program](./getting-started/first-program.md)
+- [Examples](./getting-started/examples.md)
 
 # Language Reference
 
-- [Grammar (BNF)](./language-reference/grammar.md)
-- [Types](./language-reference/types.md)
-- [Operators](./language-reference/operators.md)
+- [Syntax Guide](./language/syntax.md)
+- [Formal Grammar (BNF)](./language/grammar.md)
+- [Type System](./language/types.md)
+- [Operators](./language/operators.md)
 
-# Compilation
+# Compiler Architecture
 
-- [Overview](./compilation/overview.md)
-- [Parsing](./compilation/parsing.md)
-- [Type Checking](./compilation/type-checking.md)
-- [IR Generation](./compilation/ir-generation.md)
-- [VM Execution](./compilation/vm-execution.md)
+- [Overview](./compiler/overview.md)
+- [Parsing](./compiler/parsing.md)
+- [Type Checking](./compiler/type-checking.md)
+- [IR Generation](./compiler/ir-generation.md)
+- [VM Execution](./compiler/vm-execution.md)
+
+# Development Guide
+
+- [Error Messages](./development/error-messages.md)
 
 # Security
 
-- [Language Comparison](./security/language-comparison.md)
 - [Security Features](./security/features.md)
+- [Language Comparison](./security/comparison.md)
 
 # Team
 
