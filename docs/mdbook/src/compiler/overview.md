@@ -242,12 +242,38 @@ glados/
 5. **VM.hs**: Executes bytecode and produces result
 6. **Main.hs**: Prints result or error (exit code 0 or 84)
 
-### Compiler Flags
+### Compiler Modes
 
-The compiler supports flags to output intermediate stages:
-- **IR flag**: Output human-readable IR disassembly
-- **Bytecode flag**: Output compiled bytecode
-- These are useful for debugging and understanding compilation
+The GLaDOS compiler supports multiple modes of operation:
+
+| Mode | Usage | Description |
+|------|-------|-------------|
+| **Default** | `./glados < program.c` | Read from stdin, compile and execute |
+| **AST Mode** | `./glados --ast < program.c` | Parse and display the Abstract Syntax Tree |
+| **IR Mode** | `./glados --ir < program.c` | Parse, compile and display human-readable IR |
+| **Compile Mode** | `./glados --compile < program.c > out.gbc` | Compile to bytecode and write to stdout |
+| **Run Mode** | `./glados --run program.gbc` | Execute bytecode from FILE |
+| **Help** | `./glados --help` | Display help message |
+
+**Examples:**
+```bash
+# Compile and execute
+./glados < program.c
+
+# Show the AST for debugging
+./glados --ast < program.c
+
+# Show human-readable IR
+./glados --ir < program.c
+
+# Compile to bytecode file
+./glados --compile < program.c > program.gbc
+
+# Execute bytecode
+./glados --run program.gbc
+```
+
+These modes are useful for debugging, understanding the compilation process, and creating distributable bytecode
 
 ## Implementation Details
 

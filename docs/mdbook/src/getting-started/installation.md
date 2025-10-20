@@ -70,10 +70,38 @@ The compiled binary will be named `glados` in your project root.
 ### 3. Verify Installation
 
 ```bash
-./glados --version  # (version flag still not implemented, please use --help in the meantime)
+./glados --help
 # Or test with a simple program
 echo 'int main() { return 42; }' | ./glados
 ```
+
+## Usage
+
+GLaDOS supports multiple modes of operation:
+
+```bash
+# Compile and execute (default)
+./glados < program.c
+
+# Display Abstract Syntax Tree
+./glados --ast < program.c
+
+# Display human-readable IR
+./glados --ir < program.c
+
+# Compile to bytecode
+./glados --compile < program.c > program.gbc
+
+# Execute bytecode file
+./glados --run program.gbc
+
+# Show help
+./glados --help
+```
+
+**Exit Codes:**
+- `0` - Success
+- `84` - Error (parse, type, or runtime error)
 
 ## Development Workflow
 
