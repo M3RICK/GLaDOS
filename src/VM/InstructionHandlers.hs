@@ -69,13 +69,13 @@ executeLogicOp instr state = case instr of
 -- Flow op
 -- VMExecutor is a alias is Helper dummy
 executeControlFlow :: VMExecutor -> IRProgram -> Instruction -> VMState -> VMResult VMState
-executeControlFlow _ _ (Jump addr) state = Right (state {pc = addr})
+executeControlFlow _ _ (Jump addr) state = Right (state {pc = pc state + addr})
 executeControlFlow _ _ (JumpIfFalse addr) state = case popBool state of
     Left err -> Left err
     Right (condition, newState) ->
         if condition
         then Right newState
-        else Right (newState {pc = addr})
+        else Right (newState {pc = pc newState + addr})
 executeControlFlow executeFunc program (Call funcIdx) state =
     case getFunctionAt program funcIdx of
         Left err -> Left err
