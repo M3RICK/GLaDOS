@@ -11,6 +11,9 @@ import Security.TypeChecker (checkProgram)
 import Compiler.Core (compileProgram, compileToText)
 import VM.Interpreter (execute)
 import IR.Types (mainIndex)
+import Bytecode.Serialize (serializeProgramToStdout, loadProgramFromFile)
+import qualified Error.Types
+import Error.Types (formatCompilerError)
 
 -- Exit with error code 84
 die :: String -> IO a
@@ -28,23 +31,28 @@ printHelp = putStr $ unlines
     , "    (default)        Read from stdin, compile and execute"
     , "    --ast            Parse and display the Abstract Syntax Tree"
     , "    --ir             Parse, compile and display human-readable IR"
-    , "    --compile        Compile to bytecode and write to stdout (TODO)"
-    , "    --run FILE       Execute bytecode from FILE (TODO)"
+    , "    --compile        Compile to bytecode and write to stdout"
+    , "    --run FILE       Execute bytecode from FILE"
     , ""
     , "OPTIONS:"
     , "    --help           Display this help message"
+    , "    --version        Display version information"
     , ""
     , "EXAMPLES:"
-    , "    ./glados < program.c              # Compile and execute"
-    , "    ./glados --ast < program.c        # Show AST"
-    , "    ./glados --ir < program.c         # Show human-readable IR"
-    , "    ./glados --compile < program.c    # Output bytecode (TODO)"
-    , "    ./glados --run bytecode.bc        # Run bytecode (TODO)"
+    , "    ./glados < program.c                   # Compile and execute"
+    , "    ./glados --ast < program.c             # Show AST"
+    , "    ./glados --ir < program.c              # Show human-readable IR"
+    , "    ./glados --compile < program.c > a.gbc # Compile to bytecode"
+    , "    ./glados --run a.gbc                   # Execute bytecode"
     , ""
     , "EXIT CODES:"
     , "    0    Success"
     , "    84   Error (parse, type, or runtime error)"
     ]
+
+-- Print version information
+printVersion :: IO ()
+printVersion = putStrLn "GLaDOS v1.0"
 
 -- Read stdin with 1 second timeout (force strict evaluation)
 readStdinWithTimeout :: IO String
@@ -57,47 +65,65 @@ readStdinWithTimeout = timeout 1000000 (getContents >>= evaluate . force) >>= \r
 -- Default compile and execute
 runDefault :: String -> IO ()
 runDefault sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (wrapParseError parseErr)
     Right ast -> case checkProgram ast of
-        Left _ -> die "Type error"
-        Right validatedAst -> let irProgram = compileProgram validatedAst
-            in case execute irProgram (mainIndex irProgram) [] of
-                Left _ -> die "Runtime error"
+        Left typeErrs -> die (wrapTypeErrors typeErrs)
+        Right validatedAst -> case compileProgram validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irProgram -> case execute irProgram (mainIndex irProgram) [] of
+                Left runtimeErr -> die (wrapRuntimeError runtimeErr)
                 Right result -> print result
+  where
+    wrapParseError = formatCompilerError . Error.Types.wrapParseError
+    wrapTypeErrors = formatCompilerError . Error.Types.wrapTypeErrors
+    wrapRuntimeError = formatCompilerError . Error.Types.wrapRuntimeError
 
 -- Output AST only
 runAst :: String -> IO ()
 runAst sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
     Right ast -> print ast
 
 -- Output human-readable IR (disassembly)
 runIr :: String -> IO ()
 runIr sourceCode = case parseProgram sourceCode of
-    Left _ -> die "Parse error"
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
     Right ast -> case checkProgram ast of
-        Left _ -> die "Type error"
-        Right validatedAst -> putStrLn (compileToText validatedAst)
+        Left typeErrs -> die (formatCompilerError (Error.Types.wrapTypeErrors typeErrs))
+        Right validatedAst -> case compileToText validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irText -> putStrLn irText
 
--- Compile to bytecode (TODO - needs Binary serialization)
+-- creates Bytecode
 runCompile :: String -> IO ()
-runCompile _sourceCode =
-    die "Error: Bytecode compilation not yet implemented\nTODO: Implement Binary serialization for IRProgram"
+runCompile sourceCode = case parseProgram sourceCode of
+    Left parseErr -> die (formatCompilerError (Error.Types.wrapParseError parseErr))
+    Right ast -> case checkProgram ast of
+        Left typeErrs -> die (formatCompilerError (Error.Types.wrapTypeErrors typeErrs))
+        Right validatedAst -> case compileProgram validatedAst of
+            Left compileErr -> die (formatCompilerError compileErr)
+            Right irProgram -> serializeProgramToStdout irProgram
 
--- Execute bytecode file (TODO - needs Binary deserialization)
+-- Loads existing Bytecode and executes
 runBytecode :: FilePath -> IO ()
-runBytecode _path =
-    die "Error: Bytecode execution not yet implemented\nTODO: Implement Binary deserialization for IRProgram"
+runBytecode path = do
+    result <- loadProgramFromFile path
+    case result of
+        Left err -> die err
+        Right irProgram -> case execute irProgram (mainIndex irProgram) [] of
+            Left runtimeErr -> die $ formatCompilerError (Error.Types.wrapRuntimeError runtimeErr)
+            Right value -> print value
 
 -- Main entry point
 main :: IO ()
 main = do
     args <- getArgs
     case args of
-        []            -> readStdinWithTimeout >>= runDefault
-        ["--help"]    -> printHelp
-        ["--ast"]     -> readStdinWithTimeout >>= runAst
-        ["--ir"]      -> readStdinWithTimeout >>= runIr
+        [] -> readStdinWithTimeout >>= runDefault
+        ["--help"] -> printHelp
+        ["--version"] -> printVersion
+        ["--ast"] -> readStdinWithTimeout >>= runAst
+        ["--ir"] -> readStdinWithTimeout >>= runIr
         ["--compile"] -> readStdinWithTimeout >>= runCompile
-        ["--run", f]  -> runBytecode f
-        _             -> die "Invalid arguments. Use --help for usage information."
+        ["--run", f] -> runBytecode f
+        _ -> die "Invalid arguments. Use --help for usage information."

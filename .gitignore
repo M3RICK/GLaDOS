@@ -1,0 +1,11 @@
+.stack-work/
+stack.yaml.lock
+*.cabal
+.vscode/
+.gitignore
+glados
+*.gcb
+*.gbc
+*.c
+docs/mdbook/book/
+tutorial.md
