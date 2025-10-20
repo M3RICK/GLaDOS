@@ -16,6 +16,7 @@ executeStackOp :: Instruction -> VMState -> VMResult VMState
 executeStackOp instr state = case instr of
     PushInt n -> Right (push (VInt n) state)
     PushBool b -> Right (push (VBool b) state)
+    PushFloat f -> Right (push (VFloat f) state)
     Pop -> case pop state of
         Right (_, newState) -> Right newState
         Left err -> Left err
