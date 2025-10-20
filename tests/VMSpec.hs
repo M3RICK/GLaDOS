@@ -454,13 +454,13 @@ spec = do
         describe "Control Flow Operations" $ do
             it "executes Jump" $ do
                 let state = VMState {stack = [], locals = [], pc = 5, callStack = []}
-                case executeInstruction dummyProgram (Jump 10) state of
+                case executeInstruction dummyProgram (Jump 5) state of
                     Right newState -> pc newState `shouldBe` 10
                     Left err -> expectationFailure $ "Unexpected error: " ++ err
 
             it "executes JumpIfFalse (condition is false, should jump)" $ do
                 let state = VMState {stack = [VBool False], locals = [], pc = 5, callStack = []}
-                case executeInstruction dummyProgram (JumpIfFalse 20) state of
+                case executeInstruction dummyProgram (JumpIfFalse 15) state of
                     Right newState -> do
                         pc newState `shouldBe` 20
                         stack newState `shouldBe` []  -- bool was popped
@@ -468,7 +468,7 @@ spec = do
 
             it "executes JumpIfFalse (condition is true, should not jump)" $ do
                 let state = VMState {stack = [VBool True], locals = [], pc = 5, callStack = []}
-                case executeInstruction dummyProgram (JumpIfFalse 20) state of
+                case executeInstruction dummyProgram (JumpIfFalse 15) state of
                     Right newState -> do
                         pc newState `shouldBe` 5  -- PC unchanged
                         stack newState `shouldBe` []  -- bool was popped
@@ -517,7 +517,7 @@ spec = do
                 funcName = "jump_test",
                 paramCount = 0,
                 localVarCount = 0,
-                code = [PushInt 1, Jump 3, PushInt 999, PushInt 2, AddInt, Halt]
+                code = [PushInt 1, Jump 2, PushInt 999, PushInt 2, AddInt, Halt]
             }
             let program = IRProgram {functions = [func], mainIndex = 0}
             case execute program 0 [] of
@@ -529,7 +529,7 @@ spec = do
                 funcName = "if_test",
                 paramCount = 0,
                 localVarCount = 0,
-                code = [PushBool True, JumpIfFalse 4, PushInt 42, Jump 5, PushInt 999, Halt]
+                code = [PushBool True, JumpIfFalse 4, PushInt 42, Jump 2, PushInt 999, Halt]
             }
             let program = IRProgram {functions = [func], mainIndex = 0}
             case execute program 0 [] of
@@ -541,7 +541,7 @@ spec = do
                 funcName = "if_test2",
                 paramCount = 0,
                 localVarCount = 0,
-                code = [PushBool False, JumpIfFalse 4, PushInt 999, Jump 5, PushInt 100, Halt]
+                code = [PushBool False, JumpIfFalse 3, PushInt 999, Jump 2, PushInt 100, Halt]
             }
             let program = IRProgram {functions = [func], mainIndex = 0}
             case execute program 0 [] of
