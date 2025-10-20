@@ -10,8 +10,11 @@ module VM.HelperFunc (
   , setLocal
   , popInt
   , popBool
+  , popFloat
   , binaryIntOp
+  , binaryFloatOp
   , compareInts
+  , compareFloats
   , binaryBoolOp
   , popNValues
 ) where
