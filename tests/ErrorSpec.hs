@@ -7,7 +7,6 @@ import Compiler.Core (compileProgram)
 import Bytecode.Serialize (serializeProgram, deserializeProgram, saveProgramToFile, loadProgramFromFile)
 import VM.Interpreter (execute)
 import IR.Types
-import qualified Data.ByteString.Lazy as BSL
 
 spec :: Spec
 spec = do
