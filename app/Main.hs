@@ -36,6 +36,7 @@ printHelp = putStr $ unlines
     , ""
     , "OPTIONS:"
     , "    --help           Display this help message"
+    , "    --version        Display version information"
     , ""
     , "EXAMPLES:"
     , "    ./glados < program.c                   # Compile and execute"
@@ -48,6 +49,10 @@ printHelp = putStr $ unlines
     , "    0    Success"
     , "    84   Error (parse, type, or runtime error)"
     ]
+
+-- Print version information
+printVersion :: IO ()
+printVersion = putStrLn "GLaDOS v1.0"
 
 -- Read stdin with 1 second timeout (force strict evaluation)
 readStdinWithTimeout :: IO String
@@ -116,6 +121,7 @@ main = do
     case args of
         [] -> readStdinWithTimeout >>= runDefault
         ["--help"] -> printHelp
+        ["--version"] -> printVersion
         ["--ast"] -> readStdinWithTimeout >>= runAst
         ["--ir"] -> readStdinWithTimeout >>= runIr
         ["--compile"] -> readStdinWithTimeout >>= runCompile
