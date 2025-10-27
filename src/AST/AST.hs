@@ -1,6 +1,8 @@
 module AST.AST (
     Program(..)
+  , TopLevel(..)
   , Function(..)
+  , FunctionDecl(..)
   , Parameter(..)
   , Statement(..)
   , Expr(..)
@@ -12,18 +14,32 @@ module AST.AST (
 
 import Text.Megaparsec.Pos (SourcePos)
 
--- | A whole program = list of functions
-data Program = Program [Function]
+-- | A whole program = list of top-level declarations
+data Program = Program [TopLevel]
   deriving (Show, Eq)
 
--- | Function declaration
+-- Ca peut etre soit une fonnction ou une definition ou un prototype
+data TopLevel
+  = FuncDef Function          -- int foo(int x) { ... }
+  | FuncProto FunctionDecl    -- int foo(int x);
+  deriving (Show, Eq)
+
+-- | Fonction definition avec ce que ca contient
 data Function = Function
   { fType       :: Type
   , fName       :: String
   , fParams     :: [Parameter]
   , fBody       :: [Statement]
   }
-  deriving (Show, Eq) -- temporaire va falloir creer un PrintAst :: AST -> String et aussi utiliser SourcePos de Megaparsec pour des beaux msg d erreurs
+  deriving (Show, Eq)
+
+-- | Function declaration/prototype (no body)
+data FunctionDecl = FunctionDecl
+  { fdType   :: Type
+  , fdName   :: String
+  , fdParams :: [Parameter]
+  }
+  deriving (Show, Eq)
 
 -- | Function parameter
 data Parameter = Parameter
