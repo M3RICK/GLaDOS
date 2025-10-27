@@ -1,20 +1,26 @@
 module Security.TypeInference (inferProgram) where
 
+import qualified Data.Map as M
 import AST.AST
 import Security.Types
 import Security.Environment
 import Security.ExprChecker (getExprType)
-import AST.Helpers (defaultPos)
+import AST.Helpers (defaultPos, extractFunctions)
 
 inferProgram :: Program -> Either [TypeError] Program
-inferProgram (Program funcs) = do
-  inferredFuncs <- inferAllFunctions funcs
-  return (Program inferredFuncs)
+inferProgram (Program topLevels) = do
+  let funcs = extractFunctions topLevels
+  let fEnv = collectAllFunctionSignatures topLevels
+  inferredFuncs <- mapM (inferFunction fEnv) funcs
+  return (Program (reconstructTopLevels topLevels inferredFuncs))
 
-inferAllFunctions :: [Function] -> Either [TypeError] [Function]
-inferAllFunctions funcs =
-  let fEnv = collectFunctionSignatures funcs
-  in mapM (inferFunction fEnv) funcs
+reconstructTopLevels :: [TopLevel] -> [Function] -> [TopLevel]
+reconstructTopLevels originals inferred =
+  map (replaceFunc inferredMap) originals
+  where
+    inferredMap = M.fromList [(fName f, f) | f <- inferred]
+    replaceFunc fMap (FuncDef f) = FuncDef (M.findWithDefault f (fName f) fMap)
+    replaceFunc _ proto@(FuncProto _) = proto
 
 -- single function
 inferFunction :: FuncEnv -> Function -> Either [TypeError] Function
