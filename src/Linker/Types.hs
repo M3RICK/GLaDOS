@@ -6,21 +6,20 @@ module Linker.Types
 
 import IR.Types (Instruction)
 
--- Object file: what gets saved to disk
 data ObjectFile = ObjectFile
   { objFunctions :: [RelocatableFunction]
-  , objExports :: [String]        -- Ce que ca apporte
-  , objImports :: [String]        -- En a besoin
+  , objExports :: [String] -- What this file provides
+  , objImports :: [String] -- What this file needs
   } deriving (Show, Eq)
 
 data RelocatableFunction = RelocatableFunction
   { rfName :: String
   , rfParams :: Int
   , rfLocals :: Int
-  , rfCode :: [RelocatableInstr]
+  , rfCode :: [RelocatableInstr] -- Instructions with symbolic references
   } deriving (Show, Eq)
 
 data RelocatableInstr
-  = Fixed Instruction      -- Normal instruction
-  | CallRef String        -- Call by name (needs linking)
+  = Fixed Instruction
+  | CallRef String
   deriving (Show, Eq)
