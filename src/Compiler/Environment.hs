@@ -3,38 +3,32 @@ module Compiler.Environment (
   , FuncTable
   , makeParamTable
   , makeFuncTable
-  , findMainIndex
   , collectLocalDecls
   , buildVarTable
   , lookupVar
   , lookupFunc
+  , lookupFuncMaybe
 ) where
 
 import qualified Data.Map as M
 import AST.AST
 
--- nom d’une variable à son indice local
+-- nom d'une variable à son indice local
 type VarTable = M.Map String Int
 
--- nom d’une fonction à son indice
+-- nom d'une fonction à son indice
 type FuncTable = M.Map String Int
+
+indexedBy :: (a -> String) -> [a] -> [(String, Int)]
+indexedBy getName items = zipWith (\item idx -> (getName item, idx)) items [0..]
 
 -- { "x" -> 0, "y" -> 1, "z" -> 2 }
 makeParamTable :: [Parameter] -> VarTable
-makeParamTable params =
-  M.fromList $ zip (map paramName params) [0..]
+makeParamTable params = M.fromList (indexedBy paramName params)
 
 -- On file un indice UNIQUE a chaque fonction
 makeFuncTable :: [Function] -> FuncTable
-makeFuncTable funcs =
-  M.fromList $ zip (map fName funcs) [0..]
-
--- On cherche indice de main, si rien ducp 0
-findMainIndex :: [Function] -> Int
-findMainIndex funcs =
-  case [i | (i, f) <- zip [0..] funcs, fName f == "main"] of
-    (idx:_) -> idx
-    [] -> 0
+makeFuncTable funcs = M.fromList (indexedBy fName funcs)
 
 -- Recup toutes les declarations de variables locales
 collectLocalDecls :: [Statement] -> [(String, Type)]
@@ -62,7 +56,7 @@ extractForDecls :: Maybe Statement -> [Statement] -> [(String, Type)]
 extractForDecls maybeInit body =
   maybe [] extractDecl maybeInit ++ collectLocalDecls body
 
--- | Récupère les déclarations dans les deux branches d un if
+-- Récupère les déclarations dans les deux branches d un if
 collectFromBranches :: [Statement] -> Maybe [Statement] -> [(String, Type)]
 collectFromBranches thenBody maybeElse =
   collectLocalDecls thenBody ++ maybe [] collectLocalDecls maybeElse
@@ -83,16 +77,18 @@ makeLocalTable params body =
     localIndices = [paramCount..]
     paramCount = length params
 
--- | Look up variable index in variable table
+-- Look up variable index in variable table
 lookupVar :: VarTable -> String -> Int
 lookupVar varTable name =
   case M.lookup name varTable of
     Just idx -> idx
     Nothing -> error $ "Variable not in table: " ++ name
 
--- | Look up function index in function table
+lookupFuncMaybe :: FuncTable -> String -> Maybe Int
+lookupFuncMaybe funcTable name = M.lookup name funcTable
+
 lookupFunc :: FuncTable -> String -> Int
 lookupFunc funcTable name =
-  case M.lookup name funcTable of
+  case lookupFuncMaybe funcTable name of
     Just idx -> idx
     Nothing -> error $ "Function not in table: " ++ name
