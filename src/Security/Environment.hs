@@ -5,6 +5,7 @@ module Security.Environment
   , makeParamEnv
   , makeFunctionEnv
   , collectFunctionSignatures
+  , collectAllFunctionSignatures
   , getFunctionSignature
   , markInitialized
   , isInitialized
@@ -47,10 +48,20 @@ collectFunctionSignatures :: [Function] -> FuncEnv
 collectFunctionSignatures funcs =
   M.fromList [(fName f, getFunctionSignature f) | f <- funcs]
 
--- Get function signature as (return type, param types)
+collectAllFunctionSignatures :: [TopLevel] -> FuncEnv
+collectAllFunctionSignatures topLevels =
+  M.fromList (concatMap extractSig topLevels)
+  where
+    extractSig (FuncDef f) = [(fName f, getFunctionSignature f)]
+    extractSig (FuncProto fd) = [(fdName fd, getDeclSignature fd)]
+
 getFunctionSignature :: Function -> (Type, [Type])
 getFunctionSignature func =
   (fType func, map paramType (fParams func))
+
+getDeclSignature :: FunctionDecl -> (Type, [Type])
+getDeclSignature decl =
+  (fdType decl, map paramType (fdParams decl))
 
 -- Mark variable as initialized
 markInitialized :: String -> CheckEnv -> CheckEnv

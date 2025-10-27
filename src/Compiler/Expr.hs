@@ -142,4 +142,6 @@ compileAllArguments checkEnv funcTable varTable args =
 
 createCallInstruction :: FuncTable -> String -> IR.Instruction
 createCallInstruction funcTable name =
-  IR.Call (lookupFunc funcTable name)
+  case lookupFuncMaybe funcTable name of
+    Just idx -> IR.Call idx
+    Nothing -> IR.Call (-1)  -- External reference, will be resolved by linker

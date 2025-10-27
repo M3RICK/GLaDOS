@@ -1,4 +1,4 @@
-module AST.Helpers (getExprPos, defaultPos) where
+module AST.Helpers (getExprPos, defaultPos, extractFunctions) where
 
 import AST.AST
 import Text.Megaparsec.Pos (SourcePos, initialPos)
@@ -16,3 +16,10 @@ getExprPos (Call (Located p _) _) = p
 -- Default position when we can't determine one
 defaultPos :: SourcePos
 defaultPos = initialPos "unknown"
+
+-- Extract only function definitions from top-level declarations
+extractFunctions :: [TopLevel] -> [Function]
+extractFunctions = foldr extractFunc []
+  where
+    extractFunc (FuncDef f) acc = f : acc
+    extractFunc (FuncProto _) acc = acc
