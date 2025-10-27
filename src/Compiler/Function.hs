@@ -1,4 +1,4 @@
-module Compiler.Function (compileFunction, compileFunctions) where
+module Compiler.Function (compileFunction, compileFunctions, compileFunctionsWithTable) where
 
 import IR.Types
 import AST.AST
@@ -43,10 +43,15 @@ addLocalToEnv (name, typ) env =
 -- et la on compile pas une, pas deux mais toutes les fonctions dans le programme
 compileFunctions :: [Function] -> Either CompilerError [CompiledFunction]
 compileFunctions funcs =
+  let functionTable = makeFuncTable funcs
+  in compileFunctionsWithTable functionTable funcs
+
+-- Compile functions en fonction de la func table
+compileFunctionsWithTable :: FuncTable -> [Function] -> Either CompilerError [CompiledFunction]
+compileFunctionsWithTable functionTable funcs =
   case mapM compileWithEnv funcs of
     Left err -> Left err
     Right compiledFuncs -> Right compiledFuncs
   where
-    functionTable = makeFuncTable funcs
     funcEnv = SE.collectFunctionSignatures funcs
     compileWithEnv func = compileFunction (SE.makeFunctionEnv funcEnv func) functionTable func
