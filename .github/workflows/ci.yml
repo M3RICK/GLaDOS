@@ -42,8 +42,13 @@ jobs:
       - name: Build (libraries & tests)
         run: stack build --no-terminal
 
-      - name: Test (with coverage)
+      - name: Run unit tests (with coverage)
         run: stack test --no-terminal --coverage
+
+      - name: Run integration tests
+        run: |
+          chmod +x run_tests.sh
+          ./run_tests.sh
 
       - name: Locate coverage directory
         run: echo "HPC_DIR=$(stack path --local-hpc-root)" >> $GITHUB_ENV
