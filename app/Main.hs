@@ -63,7 +63,7 @@ printHelp = putStr $ unlines
 
 -- Print version information
 printVersion :: IO ()
-printVersion = putStrLn "GLaDOS v1.2"
+printVersion = putStrLn "GLaDOS v1.3"
 
 -- Read stdin with 1 second timeout (force strict evaluation)
 readStdinWithTimeout :: IO String
