@@ -16,6 +16,9 @@ If you are interested in the full documentation of this project, do not hesitate
 
 **[https://crackedontiti.github.io/Glados_Documentation/](https://crackedontiti.github.io/Glados_Documentation/)**
 
+**Project Management & Task Tracking:**
+[Notion - GLaDOS Project Board](https://www.notion.so/GLADOS-2726219a901480379f0cc6d6814ca0f9?source=copy_link)
+
 ---
 
 ## Quick Start
