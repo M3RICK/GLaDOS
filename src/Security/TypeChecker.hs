@@ -5,21 +5,22 @@ import Security.Environment
 import Security.StatementCheckers
 import Security.TypeInference (inferProgram)
 import AST.AST
+import AST.Helpers (extractFunctions)
 import Security.ReturnChecker (listHasReturn)
 
 checkProgram :: Program -> Either [TypeError] Program
-checkProgram prog = do
-  inferredProg <- inferProgram prog
-  let Program funcs = inferredProg
-  let errors = checkAllFunctions funcs
-  if null errors
-    then Right inferredProg
-    else Left errors
-
-checkAllFunctions :: [Function] -> [TypeError]
-checkAllFunctions funcs =
-  let fEnv = collectFunctionSignatures funcs
-  in concatMap (checkFunction fEnv) funcs
+checkProgram prog =
+  case inferProgram prog of
+    Left err -> Left err
+    Right inferredProg ->
+      if null errors
+        then Right inferredProg
+        else Left errors
+      where
+        Program topLevels = inferredProg
+        funcs = extractFunctions topLevels
+        fEnv = collectAllFunctionSignatures topLevels
+        errors = concatMap (checkFunction fEnv) funcs
 
 checkFunction :: FuncEnv -> Function -> [TypeError]
 checkFunction fEnv func =
