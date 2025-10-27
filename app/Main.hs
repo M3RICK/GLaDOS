@@ -1,5 +1,12 @@
 module Main (main) where
 
+import Linker.ObjectCompiler (irToObjectWithNames)
+import Linker.Linker (linkObjectFiles)
+import qualified Data.ByteString.Lazy as BSL
+import Data.Binary (encode)
+import Data.Bifunctor (first)
+import AST.AST (Program(..), TopLevel(..), FunctionDecl(..), Function(..))
+
 import System.Environment (getArgs)
 import System.Exit (exitWith, ExitCode(..))
 import System.IO (hPutStrLn, stderr)
@@ -32,6 +39,8 @@ printHelp = putStr $ unlines
     , "    --ast            Parse and display the Abstract Syntax Tree"
     , "    --ir             Parse, compile and display human-readable IR"
     , "    --compile        Compile to bytecode and write to stdout"
+    , "    --compile-obj    Compile to object file and write to stdout"
+    , "    --link FILES     Link object files and write bytecode to stdout"
     , "    --run FILE       Execute bytecode from FILE"
     , ""
     , "OPTIONS:"
@@ -43,6 +52,8 @@ printHelp = putStr $ unlines
     , "    ./glados --ast < program.c             # Show AST"
     , "    ./glados --ir < program.c              # Show human-readable IR"
     , "    ./glados --compile < program.c > a.gbc # Compile to bytecode"
+    , "    ./glados --compile-obj < lib.c > lib.gbo     # Compile to object"
+    , "    ./glados --link lib.gbo main.gbo > out.gbc   # Link objects"
     , "    ./glados --run a.gbc                   # Execute bytecode"
     , ""
     , "EXIT CODES:"
@@ -114,6 +125,36 @@ runBytecode path = do
             Left runtimeErr -> die $ formatCompilerError (Error.Types.wrapRuntimeError runtimeErr)
             Right value -> print value
 
+-- Add these new functions
+runCompileObject :: String -> IO ()
+runCompileObject sourceCode = handleResult $ do
+  ast <- first wrapParseError $ parseProgram sourceCode
+  validatedAst <- first wrapTypeErrors $ checkProgram ast
+  irProgram <- first formatCompilerError $ compileProgram validatedAst
+  return $ buildObject irProgram validatedAst
+  where
+    wrapParseError = formatCompilerError . Error.Types.wrapParseError
+    wrapTypeErrors = formatCompilerError . Error.Types.wrapTypeErrors
+    buildObject irProgram validatedAst =
+      irToObjectWithNames irProgram (extractAllFunctionNames validatedAst)
+    handleResult (Left err) = die err
+    handleResult (Right obj) = BSL.putStr (encode obj)
+
+-- mm ordre que dans la func table ducp definitions first, then les protos sans definitions (externals)
+extractAllFunctionNames :: Program -> [String]
+extractAllFunctionNames (Program topLevels) = defs ++ externals
+  where
+    defs = [fName f | FuncDef f <- topLevels]
+    protos = [fdName fd | FuncProto fd <- topLevels]
+    externals = filter (`notElem` defs) protos
+
+runLink :: [FilePath] -> IO ()
+runLink objFiles = do
+  result <- linkObjectFiles objFiles
+  case result of
+    Left err -> die $ "Link error: " ++ err
+    Right linkedProg -> serializeProgramToStdout linkedProg
+
 -- Main entry point
 main :: IO ()
 main = do
@@ -125,6 +166,8 @@ main = do
         ["--ast"] -> readStdinWithTimeout >>= runAst
         ["--ir"] -> readStdinWithTimeout >>= runIr
         ["--compile"] -> readStdinWithTimeout >>= runCompile
+        ["--compile-obj"] -> readStdinWithTimeout >>= runCompileObject
+        ("--link":objFiles) | not (null objFiles) -> runLink objFiles
         ["--run", f] -> runBytecode f
         _ -> die "Invalid arguments. Use --help for usage information."
 
