@@ -2,6 +2,50 @@
 
 GLaDOS implements several compile-time and runtime safety features that prevent common programming errors.
 
+## Why "Security" Module?
+
+The type checker and related safety features are implemented in the `Security/` module (`src/Security/`) rather than a generic "TypeChecker" module. This design choice reflects an important philosophy:
+
+**Type safety is a security feature.**
+
+Type checking prevents entire classes of security vulnerabilities:
+
+- **Type Confusion Attacks**: Prevented by strict type checking
+- **Memory Safety**: Initialization tracking prevents use of uninitialized memory
+- **Control Flow Integrity**: Return path analysis ensures functions always return valid values
+- **Input Validation**: Function signature validation ensures arguments match expected types
+
+By treating type checking as a security concern, GLaDOS emphasizes that correctness and safety are not just nice-to-have features, but fundamental security requirements.
+
+### Security Module Components
+
+The `src/Security/` module contains:
+
+- **`TypeChecker.hs`**: Main type checking implementation
+- **`Environment.hs`**: Type checking environment and initialization tracking
+- **`Types.hs`**: Type checking data types and error types
+
+### Located Types for Security
+
+All AST nodes use the `Located` wrapper to track source positions:
+
+```haskell
+data Located a = Located
+  { pos :: SourcePos     -- Exact location in source file
+  , value :: a           -- The actual value
+  }
+```
+
+**Security Benefit**: Precise error reporting enables developers to quickly identify and fix security issues. Without source positions, developers would have to manually search for errors, increasing the risk of overlooking vulnerabilities.
+
+**Example Error with Location:**
+```
+Type error at line 10, column 5:
+  Variable 'password' used before initialization
+```
+
+This immediately tells the developer exactly where the security issue (uninitialized variable) occurs.
+
 ## Overview
 
 | Safety Feature | Detection Time | Status |
@@ -31,7 +75,7 @@ int x = true;
 Type error at line 1: expected int but got bool
 ```
 
-**Implementation**: Type checker (`src/Compiler.hs`) infers expression types and verifies compatibility
+**Implementation**: Type checker (`src/Security/TypeChecker.hs`) infers expression types and verifies compatibility
 
 **Benefits**:
 - Catches errors before deployment
@@ -92,7 +136,7 @@ int main() {
 Division by zero at line 2
 ```
 
-**Implementation**: Security analyzer (`src/Security.hs`) checks all division operations
+**Implementation**: Security analyzer (`src/Security/TypeChecker.hs`) checks all division operations
 
 **Limitations**: Only catches literal zeros, not variables
 
