@@ -28,6 +28,7 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
               | <assignment> ";"
               | <if_statement>
               | <while_statement>
+              | <for_statement>
               | <return_statement> ";"
 ```
 
@@ -39,6 +40,10 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 <if_statement> ::= "if" "(" <expression> ")" "{" <statement_list> "}" <else_clause>
 <else_clause> ::= ε | "else" "{" <statement_list> "}"
 <while_statement> ::= "while" "(" <expression> ")" "{" <statement_list> "}"
+<for_statement> ::= "for" "(" <for_init> ";" <for_condition> ";" <for_increment> ")" "{" <statement_list> "}"
+<for_init> ::= ε | <declaration> | <assignment>
+<for_condition> ::= ε | <expression>
+<for_increment> ::= ε | <assignment>
 <return_statement> ::= "return" <expression>
 ```
 
@@ -77,7 +82,7 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 The grammar supports:
 - **Functions** with parameters and return values
 - **Types**: `int` and `bool`
-- **Statements**: variable declaration, assignment, if/else, while, return
+- **Statements**: variable declaration, assignment, if/else, while, for, return
 - **Expressions**: numbers, booleans, identifiers, arithmetic operators, boolean operators
 - **Comments**: C-style `//` line comments and `/* */` block comments
 
@@ -101,7 +106,7 @@ int max(int a, int b) {
 }
 ```
 
-### Loops
+### While Loops
 ```c
 int factorial(int n) {
     int result = 1;
@@ -110,6 +115,17 @@ int factorial(int n) {
         n = n - 1;
     }
     return result;
+}
+```
+
+### For Loops
+```c
+int sum(int n) {
+    int total = 0;
+    for (int i = 1; i <= n; i = i + 1) {
+        total = total + i;
+    }
+    return total;
 }
 ```
 
