@@ -370,38 +370,47 @@ int x = 42;
 
 ## Semicolons
 
-Following in the footsteps of King Terry Davis and HolyC, **semicolons are completely optional** in GLaDOS. We know this might make some of you anxious, but the program will run either way - even if they're mixed up in the same function!
+Following in the footsteps of King Terry Davis and HolyC, **semicolons are optional after statements** in GLaDOS. We know this might make some of you anxious, but the program will run either way - even if they're mixed up in the same function!
 
 ```c
-// All of these are valid:
-
-// With semicolons (if you like them)
 int x = 5;
 int y = 10;
 return x + y;
 
-// Without semicolons (HolyC style)
 int x = 5
 int y = 10
 return x + y
 
-// Mixed (because why not?)
 int x = 5;
 int y = 10
 return x + y;
 
-// Even in control structures
 if (x > 0) {
     return x
 }
 
-// Or with semicolons if you prefer
 if (x > 0) {
     return x;
 }
 ```
 
 Use them, don't use them, mix them - GLaDOS doesn't judge. Code the way Terry intended: free.
+
+**Important Exception:**
+
+Semicolons are **required** in for loop syntax to separate the three clauses:
+
+```c
+for (int i = 0; i < 10; i = i + 1) {
+
+}
+
+for (int i = 0; i < 10; i = i + 1) {
+
+}
+```
+
+The semicolons between `init`, `condition`, and `increment` clauses in for loops are mandatory, even though semicolons after statements inside the loop body remain optional.
 
 ## Function Calls
 
