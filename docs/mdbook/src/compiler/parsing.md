@@ -144,22 +144,24 @@ operatorTable =
   [ [ binary "*" Mul, binary "/" Div ]                    -- Precedence 6 (highest)
   , [ binary "+" Add, binary "-" Sub ]                    -- Precedence 5
   , [ binary "<" Lt, binary ">" Gt
-    , binary "<=" Lte, binary ">=" Gte ]                  -- Precedence 4
+    , binary "<=" Le, binary ">=" Ge ]                    -- Precedence 4
   , [ binary "==" Eq, binary "!=" Neq ]                   -- Precedence 3
   , [ binary "&&" And ]                                    -- Precedence 2
   , [ binary "||" Or ]                                     -- Precedence 1 (lowest)
   ]
 
 -- Binary operator helper
-binary :: String -> BinOp -> Operator Parser Expr
+binary :: String -> Op -> Operator Parser Expr
 binary name op = InfixL (BinOp op <$ symbol name)
 
 -- Term (atomic expression)
+-- Note: Simplified pseudocode. Actual implementation uses BoolLit, NumLit, FloatLit
+-- constructors with Located wrappers for source position tracking.
 term :: Parser Expr
 term = parens expr
-   <|> Lit <$> literal
+   <|> literal              -- Parses to BoolLit/NumLit/FloatLit (Located)
    <|> try functionCall
-   <|> Var <$> identifier
+   <|> identifier           -- Parses to Var (Located String)
 ```
 
 **Key Points:**
@@ -214,7 +216,7 @@ varDeclaration = do
   varName <- identifier
   value <- optional (symbol "=" >> expr)
   optional (symbol ";")
-  return $ VarDecl varType varName value
+  return $ Decl varType varName value
 
 -- Assignment
 assignment :: Parser Statement
@@ -260,7 +262,10 @@ paramList = param `sepBy` symbol ","
 
 -- Type parser
 typeParser :: Parser Type
-typeParser = (TInt <$ keyword "int") <|> (TBool <$ keyword "bool")
+typeParser = (TypeInt <$ keyword "int")
+         <|> (TypeFloat <$ keyword "float")
+         <|> (TypeBool <$ keyword "bool")
+         <|> (TypeVoid <$ keyword "void")
 
 -- Program (list of functions)
 program :: Parser Program
@@ -464,8 +469,8 @@ int add(int a, int b) {
 Program
   [ FuncDef
       { funcName = "add"
-      , funcReturnType = TInt
-      , funcParams = [("a", TInt), ("b", TInt)]
+      , funcReturnType = TypeInt
+      , funcParams = [("a", TypeInt), ("b", TypeInt)]
       , funcBody =
           [ Return
               (BinOp Add
