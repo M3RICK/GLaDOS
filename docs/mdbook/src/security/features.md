@@ -1,456 +1,288 @@
-# Security Features
+# GLaDOS Security Features
 
-GLaDOS implements several compile-time and runtime safety features that prevent common programming errors.
+> A statically-typed, compiled language with compile-time safety guarantees and runtime protections
 
-## Overview
+---
 
-| Safety Feature | Detection Time | Status |
-|----------------|---------------|--------|
-| Static type checking | Compile-time | ✓ Implemented |
-| Initialization tracking | Compile-time | ✓ Implemented |
-| Division by zero (literal) | Compile-time | ✓ Implemented |
-| Division by zero (variable) | Runtime | ✓ Implemented |
-| Return path verification | Compile-time | ✓ Implemented |
-| Function signature validation | Compile-time | ✓ Implemented |
+## Executive Summary
 
-## Compile-Time Safety
+Our GLaDOS language implementation prioritizes **compile-time safety** to prevent entire classes of bugs that plague C programs. We enforce strict type checking, initialization tracking, and control flow verification before any code runs, resulting in zero runtime overhead for these safety features.
 
-### 1. Static Type Checking
+---
 
-**What it does**: Ensures all operations use compatible types
+## Security Features Overview
 
-**Prevents**: Type confusion, implicit conversions, type-based bugs
+| Safety Feature | Implementation | Detection Time | Status |
+|----------------|----------------|----------------|--------|
+| Static Type System | Full type checking with inference | Compile-time | ✓ Implemented |
+| Initialization Tracking | Flow-sensitive analysis | Compile-time | ✓ Implemented |
+| Division by Zero (literals) | AST analysis | Compile-time | ✓ Implemented |
+| Return Path Verification | Control flow analysis | Compile-time | ✓ Implemented |
+| Type Inference | `var` keyword with initialization | Compile-time | ✓ Implemented |
+| Stack Safety | VM bounds checking | Runtime | ✓ Implemented |
+| Function Call Safety | Argument count & type validation | Compile-time | ✓ Implemented |
 
-**Example error:**
+---
+
+## The Problem: Unsafe C Behaviors
+
+### 1. Type Confusion
 ```c
-int x = true;
+// C allows this - silent truncation
+int x = 3.7;  // becomes 3, no warning
+char* p = (char*)123; // arbitrary casting
 ```
 
-**Error message:**
-```
-Type error at line 1: expected int but got bool
+### 2. Uninitialized Variables
+```c
+// C allows this - undefined behavior
+int x;
+printf("%d", x);  // Could print anything
 ```
 
-**Implementation**: Type checker (`src/Compiler.hs`) infers expression types and verifies compatibility
+### 3. Division by Zero
+```c
+// C allows this - runtime crash
+int result = 10 / 0;
+```
 
-**Benefits**:
-- Catches errors before deployment
-- No runtime type checking needed (zero overhead)
-- Self-documenting code (types show intent)
+### 4. Missing Return Statements
+```c
+// C allows this - returns garbage
+int calculate(int x) {
+    if (x > 0) return x * 2;
+    // Oops, forgot the else case
+}
+```
+
+---
+
+## Our Solutions
+
+### 1. Strong Static Type System
+
+**What we do:** Enforce type correctness at compile time with no implicit conversions.
+
+**Example - Type Mismatch Detection:**
+```c
+int x = true;  // Our language
+```
+**Error:**
+```
+Type error at line 1:5
+  expected: int
+  got: bool
+```
+
+**Example - Safe Type Inference:**
+```c
+var x = 42;        // Inferred as int
+var y = 3.14;      // Inferred as float
+var z = x + y;     // Error: cannot add int and float
+```
 
 ### 2. Initialization Tracking
 
-**What it does**: Tracks whether variables have been assigned before use
-
-**Prevents**: Reading uninitialized memory, undefined behavior
-
-**Example error:**
-```c
-int main() {
-    int x;
-    return x;  // ERROR: x not initialized
-}
-```
-
-**Error message:**
-```
-Variable 'x' used before initialization at line 3
-```
-
-**Implementation**: Type checker maintains initialization status for each variable
-
-**How it works:**
-1. Declaration: Variable marked as `Uninitialized`
-2. Assignment: Variable marked as `Initialized`
-3. Usage: Check that variable is `Initialized`
+**What we do:** Track variable initialization through control flow paths using a flow-sensitive analysis.
 
 **Example:**
 ```c
-int x;              // x is Uninitialized
-x = 42;             // x is now Initialized
-return x;           // OK: x is Initialized
-
-int y;              // y is Uninitialized
-return y;           // ERROR: y is Uninitialized
-```
-
-### 3. Division by Zero Detection (Literal)
-
-**What it does**: Detects division by literal zero at compile time
-
-**Prevents**: Runtime crashes from obvious division errors
-
-**Example error:**
-```c
-int main() {
-    return 10 / 0;
+int x;
+if (condition) {
+    x = 10;
 }
+return x;  // Error: x may not be initialized
+```
+**Error:**
+```
+Variable 'x' used before initialization at line 4:8
 ```
 
-**Error message:**
-```
-Division by zero at line 2
-```
-
-**Implementation**: Security analyzer (`src/Security.hs`) checks all division operations
-
-**Limitations**: Only catches literal zeros, not variables
-
+**Safe Pattern:**
 ```c
-// Caught at compile time
-int x = 10 / 0;     // ERROR
+int x = 0;  // Explicit initialization
+if (condition) {
+    x = 10;
+}
+return x;  // OK: x is definitely initialized
+```
 
-// Not caught at compile time
-int y = 0;
-int z = 10 / y;     // Runtime error
+### 3. Division by Zero Detection
+
+**What we do:** Catch literal zero denominators at compile time.
+
+**Example:**
+```c
+int y = 10 / 0;
+float z = 3.14 / 0.0;
+```
+**Error:**
+```
+Division by zero at line 1:9
+```
+
+**Runtime Protection:**
+```c
+int divisor = getUserInput();
+int result = 10 / divisor;  // Runtime check in VM
 ```
 
 ### 4. Return Path Verification
 
-**What it does**: Ensures all code paths return correct type
-
-**Prevents**: Missing returns, returning uninitialized values, undefined behavior
-
-**Example error:**
-```c
-int getValue(int x) {
-    if (x > 0) {
-        return 1;
-    }
-    // Missing return here!
-}
-```
-
-**Error message:**
-```
-Function 'getValue' must return a value on all code paths
-```
-
-**Implementation**: Type checker analyzes all execution paths
-
-**How it works:**
-1. Check if function body contains explicit return
-2. For if statements, verify both branches return
-3. Verify returns have correct type
+**What we do:** Ensure all control paths in non-void functions return a value.
 
 **Example:**
 ```c
-// ✗ ERROR: Missing else branch
-int bad1(int x) {
+int calculate(int x) {
     if (x > 0) {
-        return 1;
+        return x * 2;
     }
+    // Missing else branch
 }
+```
+**Error:**
+```
+Function 'calculate' must return a value on all code paths
+```
 
-// ✓ OK: Both branches return
-int good1(int x) {
+**Correct Version:**
+```c
+int calculate(int x) {
     if (x > 0) {
-        return 1;
+        return x * 2;
     } else {
         return 0;
     }
 }
-
-// ✓ OK: Return after if
-int good2(int x) {
-    if (x > 0) {
-        return 1;
-    }
-    return 0;
-}
 ```
 
-### 5. Function Signature Validation
+### 5. Function Call Safety
 
-**What it does**: Verifies function calls match declarations
+**What we do:** Validate argument counts and types at compile time.
 
-**Prevents**: Wrong argument count, wrong argument types, undefined functions
-
-**Example errors:**
+**Example:**
 ```c
 int add(int a, int b) {
     return a + b;
 }
 
 int main() {
-    return add(5);        // ERROR: Expected 2 args, got 1
-    return add(true, 5);  // ERROR: Expected int, got bool
-    return foo(5);        // ERROR: Undefined function 'foo'
+    int x = add(1);      // Error: wrong arg count
+    int y = add(1, true); // Error: type mismatch
+    return 0;
 }
 ```
 
-**Error messages:**
-```
-Function 'add' expects 2 arguments but got 1 at line 6
-Type mismatch in function argument at line 7: expected int but got bool
-Undefined function 'foo' at line 8
-```
+---
 
-**Implementation**: Type checker builds global environment of function signatures
+## Implementation Architecture
 
-**How it works:**
-1. Pass 1: Collect all function signatures
-2. Pass 2: Verify all function calls match signatures
+### Compile-Time Checks (Zero Runtime Cost)
 
-## Runtime Safety
+1. **Parser** (`Parser/Core.hs`): Builds AST with source positions for error reporting
+2. **Type Inference** (`Security/TypeInference.hs`): Resolves `var` declarations
+3. **Type Checker** (`Security/TypeChecker.hs`): Validates types and initialization
+4. **Compiler** (`Compiler/Core.hs`): Generates safe bytecode only for valid programs
 
-### 1. Division by Zero (Variable)
+### Runtime Safety (VM Layer)
 
-**What it does**: Checks for zero divisor at runtime
+1. **Stack Bounds Checking** (`VM/HelperFunc.hs`): Prevents stack overflow/underflow
+2. **Local Variable Bounds** (`VM/HelperFunc.hs`): Array bounds checking for locals
+3. **Division by Zero** (`VM/InstructionHandlers.hs`): Runtime check for dynamic values
+4. **Type-Safe Operations**: VM maintains type tags (VInt, VBool, VFloat)
 
-**Prevents**: Division by zero crashes
+---
 
-**Example:**
+## Design Rationale
+
+### Why Compile-Time Over Runtime?
+
+1. **Zero Performance Overhead**: No runtime checks for proven-safe code
+2. **Early Error Detection**: Bugs caught before deployment
+3. **Better Developer Experience**: Immediate feedback during development
+4. **Predictable Performance**: No hidden runtime costs
+
+### Why Not Full Dependent Types?
+
+We deliberately chose a practical middle ground:
+- **What we have**: Strong static types with inference
+- **What we don't**: Full dependent types or theorem proving
+- **Rationale**: Balances safety with usability and compilation speed
+
+---
+
+## Limitations and Trade-offs
+
+### What We DON'T Prevent:
+
+1. **Integer Overflow**: Would require either runtime checks (performance cost) or different arithmetic semantics
+2. **Runtime Division by Zero**: Only catch literal zeros; dynamic values checked at runtime
+3. **Infinite Loops**: Halting problem - theoretically impossible to solve completely
+4. **Stack Overflow from Deep Recursion**: Would need tail-call optimization (future work)
+
+### Design Trade-offs:
+
+- **No Implicit Conversions**: More verbose but prevents subtle bugs
+- **Mandatory Initialization**: Requires explicit defaults but prevents undefined behavior
+- **No Null/Pointers**: Limits expressiveness but eliminates entire bug classes
+
+---
+
+## Testing Our Security
+
+### Type System Tests
 ```c
-int divide(int a, int b) {
-    return a / b;  // Runtime check
+// All should fail compilation:
+int x = 3.14;           // float to int
+bool b = 42;            // int to bool
+int y = true + false;   // bool arithmetic
+```
+
+### Initialization Tests
+```c
+// Should fail:
+int x;
+int y = x + 1;  // x not initialized
+
+// Should pass:
+int a = 0;
+int b = a + 1;  // a is initialized
+```
+
+### Control Flow Tests
+```c
+// Should fail:
+int risky(bool flag) {
+    if (flag) return 42;
+    // missing else
 }
 
-int main() {
-    return divide(10, 0);  // Runtime error
+// Should pass:
+int safe(bool flag) {
+    if (flag) return 42;
+    else return 0;
 }
 ```
 
-**Error message:**
-```
-Runtime error: Division by zero
-```
+---
 
-**Implementation**: VM (`src/VM.hs`) checks divisor before division
+## Future Security Enhancements
 
-**Performance**: Very low overhead (single integer comparison)
+### Planned Improvements:
+1. **Tail Call Optimization**: Prevent stack overflow in recursive functions
+2. **Bounds-Checked Arrays**: Safe indexing when arrays are added
+3. **Pattern Matching**: Exhaustiveness checking for safer control flow
+4. **Effect System**: Track side effects for pure functional programming
 
-### 2. Stack Safety
+### Considered but Deferred:
+1. **Gradual Typing**: Allow mixing static and dynamic typing
+2. **Linear Types**: Resource management without GC
+3. **Formal Verification**: Mathematical proofs of correctness
 
-**What it does**: Detects stack underflow and type errors
-
-**Prevents**: Invalid stack operations, type confusion
-
-**Example errors:**
-```
-Runtime error: Stack underflow
-Runtime error: Type error in addition
-```
-
-**Implementation**: VM validates stack operations
-
-### 3. Variable Safety
-
-**What it does**: Checks variable exists before loading
-
-**Prevents**: Undefined variable access
-
-**Example error:**
-```
-Runtime error: Undefined variable 'x'
-```
-
-**Implementation**: VM checks environment before loading variable
-
-## Memory Safety
-
-**What it does**: Prevents memory errors by design
-
-**How**: No pointers in the language
-
-**Prevents**:
-- Use-after-free
-- Double free
-- Buffer overflow
-- Null pointer dereference
-- Dangling pointers
-
-**Trade-off**: Cannot do low-level systems programming
-
-## Design Philosophy
-
-### Zero Runtime Overhead (for compile-time checks)
-
-All compile-time checks have **zero runtime cost**:
-
-1. Type checking → No runtime type information
-2. Initialization tracking → No runtime tracking
-3. Return path verification → No runtime checks
-4. Function signature validation → No runtime validation
-
-Only **unavoidable** runtime checks:
-- Division by zero (variable divisors)
-- Stack operations (VM safety)
-
-### Fail Fast
-
-Errors are caught as early as possible:
-
-1. **Parse time**: Syntax errors
-2. **Compile time**: Type errors, initialization errors
-3. **Runtime**: Division by zero (when unavoidable)
-
-### Clear Error Messages
-
-Every error message includes:
-- Error type (Parse error, Type error, Runtime error)
-- Line number
-- Description of problem
-- Expected vs actual (for type errors)
-
-**Example:**
-```
-Type error at line 5: expected int but got bool
-```
-
-## Security Guarantees
-
-GLaDOS provides the following guarantees:
-
-### Type Soundness
-
-**Guarantee**: Well-typed programs cannot have type errors at runtime
-
-**How**: Complete type checking before IR generation
-
-**Caveat**: VM still performs runtime type checks for safety
-
-### Initialization Safety
-
-**Guarantee**: Variables cannot be read before initialization
-
-**How**: Compile-time tracking of initialization status
-
-**Caveat**: Control flow is analyzed conservatively
-
-### Return Safety
-
-**Guarantee**: Functions always return correct type
-
-**How**: All code paths verified to return
-
-**Caveat**: Compiler may be conservative (require unnecessary returns)
-
-### Operation Safety
-
-**Guarantee**: Operators only applied to compatible types
-
-**How**: Expression type inference and validation
-
-**Caveat**: Integer overflow is not detected
-
-## Limitations
-
-### What GLaDOS Does NOT Prevent
-
-1. **Integer Overflow**
-   - Silent wraparound like C
-   - Would require checked arithmetic or BigInt
-
-2. **Runtime Division by Zero (Variable)**
-   - Only literal zeros caught at compile time
-   - Full constant propagation is complex
-
-3. **Resource Leaks**
-   - No file handles or resources yet
-   - Would need RAII or garbage collection
-
-4. **Logic Errors**
-   - Type-safe but can still have bugs
-   - Example: `return a + b` instead of `return a - b`
-
-5. **Infinite Loops**
-   - Loop termination is undecidable
-   - Example: `while (true) {}`
-
-6. **Stack Overflow**
-   - Deep recursion can overflow call stack
-   - No tail call optimization
-
-## Future Enhancements
-
-Potential future safety features:
-
-1. **Checked Arithmetic**
-   - Overflow detection for integer operations
-   - Panic or wrap based on mode
-
-2. **Constant Propagation**
-   - Catch `int a = 0; int b = 10 / a;`
-   - Requires more sophisticated analysis
-
-3. **Bounds Checking**
-   - If arrays are added
-   - Prevent buffer overflow
-
-4. **Resource Management**
-   - RAII-style destructors
-   - Automatic resource cleanup
-
-5. **Null Safety**
-   - Optional types with explicit handling
-   - Prevent null dereference
-
-## Testing Safety Features
-
-### Test Coverage
-
-GLaDOS has comprehensive tests for all safety features:
-
-```bash
-# Type safety tests
-stack test --test-arguments="--match TypeChecker"
-
-# Security tests
-stack test --test-arguments="--match Security"
-
-# Runtime safety tests
-stack test --test-arguments="--match VM"
-```
-
-### Example Tests
-
-```haskell
--- Test: Type mismatch
-testTypeMismatch = "int main() { int x = true; return x; }"
-expectError "Type error"
-
--- Test: Uninitialized variable
-testUninitialized = "int main() { int x; return x; }"
-expectError "used before initialization"
-
--- Test: Division by zero
-testDivByZero = "int main() { return 10 / 0; }"
-expectError "Division by zero"
-
--- Test: Missing return
-testMissingReturn = "int getValue() { if (true) { return 1; } }"
-expectError "must return a value"
-```
-
-## Comparison with Other Languages
-
-See [Language Comparison](./language-comparison.md) for detailed comparison with C, C++, HolyC, Rust, and others.
+---
 
 ## Conclusion
 
-GLaDOS provides significant safety improvements over C with minimal complexity:
+Our language prevents entire classes of bugs that plague C programs through a carefully designed type system and compile-time analysis. By catching errors before runtime, we provide both safety and performance. While we don't catch everything (that would be impossible), we focus on high-impact, provably detectable errors that cause real problems in production systems.
 
-**✓ Compile-time safety:**
-- Type safety
-- Initialization tracking
-- Return path verification
-- Function signature validation
-
-**✓ Runtime safety:**
-- Division by zero checking
-- Stack safety
-- Variable safety
-
-**✓ Design safety:**
-- No pointers (memory safe)
-- No null (no null dereference)
-- Simple type system (easy to verify)
-
-These features eliminate entire classes of bugs while maintaining:
-- Zero runtime overhead (for compile-time checks)
-- Fast compilation
-- Simple language semantics
-- Clear error messages
-
-GLaDOS proves that significant safety can be achieved without complexity.
+The key insight: **Most bugs can be prevented by design, not just detected at runtime.**
