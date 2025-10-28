@@ -260,7 +260,7 @@ int main() {
 Runtime error: Division by zero
 ```
 
-**Implementation**: VM (`src/VM.hs`) checks divisor before division
+**Implementation**: VM (`src/VM/Interpreter.hs`) checks divisor before division
 
 **Performance**: Very low overhead (single integer comparison)
 
