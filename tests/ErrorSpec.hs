@@ -29,8 +29,8 @@ spec = do
                 Left _ -> return ()  -- Any parse error is expected
                 Right _ -> expectationFailure "Expected parse error"
 
-        it "detects missing function body" $ do
-            let source = "int main();"
+        it "detects missing closing brace in function body" $ do
+            let source = "int main() { return 0;"
             case parseProgram source of
                 Left _ -> return ()  -- Any parse error is expected
                 Right _ -> expectationFailure "Expected parse error"
