@@ -80,8 +80,8 @@ Program
   [ Function
       (FuncDef
          { funcName = "add"
-         , funcReturnType = TInt
-         , funcParams = [("a", TInt), ("b", TInt)]
+         , funcReturnType = TypeInt
+         , funcParams = [("a", TypeInt), ("b", TypeInt)]
          , funcBody =
              [ Return
                  (BinOp Add

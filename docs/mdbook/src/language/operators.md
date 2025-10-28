@@ -610,10 +610,11 @@ bool result = ((a > 0) && (b < 10)) || (c == 5);
 
 ## Operator Implementation
 
-Operators are implemented in the VM using stack-based instructions:
+Operators are implemented in the VM using type-specific stack-based instructions:
 
-- **Arithmetic**: `Add`, `Sub`, `Mul`, `Div`
-- **Comparison**: `Eq`, `Neq`, `Lt`, `Gt`, `Lte`, `Gte`
-- **Logical**: `And`, `Or`
+- **Arithmetic**: `AddInt`, `AddFloat`, `SubInt`, `SubFloat`, `MulInt`, `MulFloat`, `DivInt`, `DivFloat`
+- **Unary**: `NegInt`, `NegFloat`, `NotBool`
+- **Comparison**: `EqInt`, `EqFloat`, `NeqInt`, `NeqFloat`, `LtInt`, `LtFloat`, `GtInt`, `GtFloat`, `LeInt`, `LeFloat`, `GeInt`, `GeFloat`
+- **Logical**: `AndBool`, `OrBool`
 
 All operators pop their operands from the stack and push the result back onto the stack.
