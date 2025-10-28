@@ -56,15 +56,19 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 ```bnf
 <expression> ::= <bool>
                | <number>
+               | <float>
                | <identifier>
+               | <unary_op> <expression>
                | <expression> <arith_op> <expression>
                | <expression> <bool_op> <expression>
+               | "(" <expression> ")"
 ```
 
 ## Types and Operators
 
 ```bnf
-<type> ::= "int" | "bool"
+<type> ::= "int" | "float" | "bool" | "void"
+<unary_op> ::= "-" | "!"
 <arith_op> ::= "+" | "-" | "*" | "/"
 <bool_op> ::= "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||"
 ```
@@ -73,12 +77,13 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 
 ```bnf
 <bool> ::= "true" | "false"
+<number> ::= <digit>+
+<float> ::= <digit>+ "." <digit>+
 <identifier> ::= <letter> <identifier_rest>
 <identifier_rest> ::= ε | <letter_or_digit> <identifier_rest>
 <letter_or_digit> ::= <letter> | <digit>
 <letter> ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_"
 <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-<number> ::= <digit> | <digit> <number>
 ```
 
 ## Language Features
@@ -86,9 +91,9 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 The grammar supports:
 - **Functions** with parameters and return values
 - **Function Prototypes** (forward declarations) for mutual recursion
-- **Types**: `int` and `bool`
+- **Types**: `int`, `float`, `bool`, and `void`
 - **Statements**: variable declaration, assignment, if/else, while, for, return
-- **Expressions**: numbers, booleans, identifiers, arithmetic operators, boolean operators
+- **Expressions**: integers, floats, booleans, identifiers, unary operators, arithmetic operators, boolean operators
 - **Comments**: C-style `//` line comments and `/* */` block comments
 
 ## Example Programs
@@ -154,14 +159,43 @@ int isOdd(int n) {
 }
 ```
 
+### Float Arithmetic
+```c
+float circleArea(float radius) {
+    float pi = 3.14159;
+    return pi * radius * radius;
+}
+```
+
+### Void Functions
+```c
+void printValue(int x) {
+    if (x > 0) {
+        return;
+    }
+}
+```
+
+### Unary Operators
+```c
+int negate(int x) {
+    return -x;
+}
+
+bool invert(bool flag) {
+    return !flag;
+}
+```
+
 ## Operator Precedence
 
 From highest to lowest precedence:
 
-1. **Multiplicative**: `*`, `/`
-2. **Additive**: `+`, `-`
-3. **Comparison**: `<=`, `>=`, `==`, `!=`, `<`, `>`
-4. **Logical AND**: `&&`
-5. **Logical OR**: `||`
+1. **Unary**: `-`, `!` (right-to-left associativity)
+2. **Multiplicative**: `*`, `/`
+3. **Additive**: `+`, `-`
+4. **Comparison**: `<=`, `>=`, `==`, `!=`, `<`, `>`
+5. **Logical AND**: `&&`
+6. **Logical OR**: `||`
 
 Parentheses can be used to override precedence.
