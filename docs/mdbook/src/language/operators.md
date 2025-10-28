@@ -82,15 +82,15 @@ float z = !3.14;
 
 ## Arithmetic Operators
 
-All arithmetic operators require **both operands to be `int`** and produce an `int` result.
+All arithmetic operators require **both operands to have the same numeric type** (`int` or `float`) and produce a result of the same type.
 
 ### Addition (`+`)
 
 **Syntax**: `<expr> + <expr>`
 
-**Type**: `int + int → int`
+**Type**: `int + int → int` or `float + float → float`
 
-**Description**: Adds two integers
+**Description**: Adds two numbers of the same type
 
 **Examples:**
 ```c
@@ -98,66 +98,109 @@ int a = 5 + 3;
 int b = 10 + 20;
 int c = -5 + 10;
 int d = x + y;
+
+float e = 3.14 + 2.86;
+float f = 1.5 + 0.5;
+float g = pi + radius;
+```
+
+**Type Safety:**
+```c
+int x = 5 + 3.14;
+float y = 3.14 + 2;
 ```
 
 ### Subtraction (`-`)
 
 **Syntax**: `<expr> - <expr>`
 
-**Type**: `int - int → int`
+**Type**: `int - int → int` or `float - float → float`
 
-**Description**: Subtracts the second integer from the first
+**Description**: Subtracts the second number from the first
 
 **Examples:**
 ```c
 int a = 10 - 3;
 int b = 5 - 10;
 int c = x - 1;
+
+float d = 10.5 - 3.2;
+float e = 2.0 - 0.5;
+float f = total - cost;
+```
+
+**Type Safety:**
+```c
+int x = 10 - 3.5;
+float y = 10.5 - 3;
 ```
 
 ### Multiplication (`*`)
 
 **Syntax**: `<expr> * <expr>`
 
-**Type**: `int * int → int`
+**Type**: `int * int → int` or `float * float → float`
 
-**Description**: Multiplies two integers
+**Description**: Multiplies two numbers of the same type
 
 **Examples:**
 ```c
 int a = 5 * 3;
 int b = 10 * -2;
 int c = n * n;
+
+float d = 3.14 * 2.0;
+float e = 1.5 * 4.0;
+float f = radius * radius;
+```
+
+**Type Safety:**
+```c
+int x = 5 * 2.0;
+float y = 3.14 * 2;
 ```
 
 ### Division (`/`)
 
 **Syntax**: `<expr> / <expr>`
 
-**Type**: `int / int → int`
+**Type**: `int / int → int` or `float / float → float`
 
-**Description**: Integer division (truncates toward zero)
+**Description**:
+- **Integer division**: Truncates toward zero
+- **Float division**: Produces floating-point result
 
 **Examples:**
 ```c
 int a = 10 / 2;
 int b = 15 / 4;
 int c = -10 / 3;
+
+float d = 10.0 / 3.0;
+float e = 22.0 / 7.0;
+float f = area / width;
+```
+
+**Type Safety:**
+```c
+int x = 10 / 2.0;
+float y = 10.0 / 2;
 ```
 
 **Important Notes:**
-- Division by zero with literal `0` is detected at **compile time**
+- Division by zero with literal `0` or `0.0` is detected at **compile time**
 - Division by zero with variables causes a **runtime error**
 
 ```c
-int x = 10 / 0;       // ✗ COMPILE ERROR: Division by zero
+int x = 10 / 0;
+float y = 10.0 / 0.0;
 
 int divide(int a, int b) {
-    return a / b;     // ✓ Compiles, but...
+    return a / b;
 }
 
 int main() {
-    return divide(10, 0);  // ✗ RUNTIME ERROR: Division by zero
+    return divide(10, 0);
 }
 ```
 
@@ -165,7 +208,14 @@ int main() {
 ```c
 int safeDivide(int a, int b) {
     if (b == 0) {
-        return 0;  // Or handle error appropriately
+        return 0;
+    }
+    return a / b;
+}
+
+float safeDivideFloat(float a, float b) {
+    if (b == 0.0) {
+        return 0.0;
     }
     return a / b;
 }
@@ -179,9 +229,9 @@ All comparison operators require **both operands to have the same type** and pro
 
 **Syntax**: `<expr> == <expr>`
 
-**Type**: `T == T → bool` (where T is int or bool)
+**Type**: `T == T → bool` (where T is int, float, or bool)
 
-**Description**: Tests if two values are equal
+**Description**: Tests if two values of the same type are equal
 
 **Examples:**
 ```c
@@ -189,30 +239,50 @@ bool a = 5 == 5;
 bool b = 10 == 3;
 bool c = true == false;
 bool d = x == y;
+
+bool e = 3.14 == 3.14;
+bool f = 1.5 == 2.0;
+bool g = pi == radius;
+```
+
+**Type Safety:**
+```c
+bool x = 5 == 3.14;
+bool y = true == 1;
 ```
 
 ### Not Equal (`!=`)
 
 **Syntax**: `<expr> != <expr>`
 
-**Type**: `T != T → bool` (where T is int or bool)
+**Type**: `T != T → bool` (where T is int, float, or bool)
 
-**Description**: Tests if two values are not equal
+**Description**: Tests if two values of the same type are not equal
 
 **Examples:**
 ```c
 bool a = 5 != 3;
 bool b = 10 != 10;
 bool c = true != false;
+
+bool d = 3.14 != 2.0;
+bool e = 1.5 != 1.5;
+bool f = x != y;
+```
+
+**Type Safety:**
+```c
+bool x = 5 != 3.14;
+bool y = false != 0;
 ```
 
 ### Less Than (`<`)
 
 **Syntax**: `<expr> < <expr>`
 
-**Type**: `int < int → bool`
+**Type**: `int < int → bool` or `float < float → bool`
 
-**Description**: Tests if the first value is less than the second
+**Description**: Tests if the first numeric value is less than the second
 
 **Examples:**
 ```c
@@ -220,51 +290,91 @@ bool a = 5 < 10;
 bool b = 10 < 5;
 bool c = 5 < 5;
 bool d = x < 100;
+
+bool e = 3.14 < 4.0;
+bool f = 10.5 < 2.0;
+bool g = temperature < threshold;
+```
+
+**Type Safety:**
+```c
+bool x = 5 < 3.14;
+bool y = 3.14 < 5;
 ```
 
 ### Greater Than (`>`)
 
 **Syntax**: `<expr> > <expr>`
 
-**Type**: `int > int → bool`
+**Type**: `int > int → bool` or `float > float → bool`
 
-**Description**: Tests if the first value is greater than the second
+**Description**: Tests if the first numeric value is greater than the second
 
 **Examples:**
 ```c
 bool a = 10 > 5;
 bool b = 5 > 10;
 bool c = 5 > 5;
+
+bool d = 10.5 > 3.14;
+bool e = 2.0 > 10.5;
+bool f = value > maximum;
+```
+
+**Type Safety:**
+```c
+bool x = 10 > 3.14;
+bool y = 3.14 > 10;
 ```
 
 ### Less Than or Equal (`<=`)
 
 **Syntax**: `<expr> <= <expr>`
 
-**Type**: `int <= int → bool`
+**Type**: `int <= int → bool` or `float <= float → bool`
 
-**Description**: Tests if the first value is less than or equal to the second
+**Description**: Tests if the first numeric value is less than or equal to the second
 
 **Examples:**
 ```c
 bool a = 5 <= 10;
 bool b = 10 <= 10;
 bool c = 15 <= 10;
+
+bool d = 3.14 <= 4.0;
+bool e = 10.5 <= 10.5;
+bool f = current <= limit;
+```
+
+**Type Safety:**
+```c
+bool x = 5 <= 3.14;
+bool y = 3.14 <= 10;
 ```
 
 ### Greater Than or Equal (`>=`)
 
 **Syntax**: `<expr> >= <expr>`
 
-**Type**: `int >= int → bool`
+**Type**: `int >= int → bool` or `float >= float → bool`
 
-**Description**: Tests if the first value is greater than or equal to the second
+**Description**: Tests if the first numeric value is greater than or equal to the second
 
 **Examples:**
 ```c
 bool a = 10 >= 5;
 bool b = 10 >= 10;
 bool c = 5 >= 10;
+
+bool d = 10.5 >= 3.14;
+bool e = 5.0 >= 5.0;
+bool f = score >= passingGrade;
+```
+
+**Type Safety:**
+```c
+bool x = 10 >= 3.14;
+bool y = 3.14 >= 5;
 ```
 
 ## Logical Operators
