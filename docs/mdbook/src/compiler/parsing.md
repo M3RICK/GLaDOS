@@ -4,7 +4,7 @@ This page details the GLaDOS parser implementation, which transforms source code
 
 ## Overview
 
-The parser is implemented in `src/Parser.hs` and consists of two main phases:
+The parser is implemented in the `src/Parser/` module and consists of two main phases:
 
 1. **Lexical Analysis (Lexing)**: Convert source code into tokens
 2. **Syntactic Analysis (Parsing)**: Build AST from tokens
