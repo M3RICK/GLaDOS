@@ -38,7 +38,7 @@ Source Code (.c file)
 
 **Input**: Source code (string)
 **Output**: Token stream
-**Module**: `Parser.hs` (using Megaparsec)
+**Module**: `Parser/Core.hs` (using Megaparsec)
 
 The lexer scans the source code and breaks it into **tokens** - the smallest meaningful units:
 
@@ -70,7 +70,7 @@ int add(int a, int b) {
 
 **Input**: Token stream
 **Output**: Abstract Syntax Tree (AST)
-**Module**: `Parser.hs` (Megaparsec parser combinators)
+**Module**: `Parser/Core.hs` (Megaparsec parser combinators)
 
 The parser consumes tokens and builds a tree structure representing the program's syntax:
 
@@ -105,7 +105,7 @@ Program
 
 **Input**: AST
 **Output**: Human-Readable IR (Disassembly)
-**Module**: `Compiler.hs`
+**Module**: `Compiler/Core.hs`
 
 The compiler translates the AST into an intermediate representation (IR) - a human-readable disassembly format that represents the program's instructions:
 
@@ -146,7 +146,7 @@ This IR can be outputted using the appropriate compiler flag for debugging and i
 
 **Input**: IR (Human-Readable)
 **Output**: Bytecode
-**Module**: `Compiler.hs`
+**Module**: `Bytecode/Serialize.hs`
 
 The IR is then compiled into compact bytecode format suitable for efficient execution by the VM. This bytecode can also be outputted with a flag for inspection.
 
@@ -159,7 +159,7 @@ The IR is then compiled into compact bytecode format suitable for efficient exec
 
 **Input**: Bytecode
 **Output**: Program result
-**Module**: `VM.hs`
+**Module**: `VM/Interpreter.hs`
 
 The virtual machine executes the bytecode using a stack-based model:
 
@@ -221,25 +221,49 @@ Runtime error: Undefined function
 
 ### Module Structure
 
+GLaDOS uses a modularized architecture with separate directories for each major component:
+
 ```
 glados/
 ├── src/
-│   ├── AST.hs              # AST data types
-│   ├── Parser.hs           # Lexer and parser
-│   ├── Compiler.hs         # IR generation
-│   ├── IR.hs               # IR data types
-│   ├── Bytecode.hs         # Bytecode generation
-│   ├── VM.hs               # Virtual machine
-│   └── Main.hs             # Entry point
+│   ├── AST/
+│   │   └── AST.hs                # AST data types
+│   ├── Parser/
+│   │   ├── Core.hs               # Main parser export
+│   │   ├── Lexer.hs              # Lexer utilities
+│   │   ├── Program.hs            # Program parser
+│   │   ├── Statement.hs          # Statement parsers
+│   │   └── Expression.hs         # Expression parsers
+│   ├── Security/
+│   │   ├── Environment.hs        # Type checking environment
+│   │   ├── TypeChecker.hs        # Type checking implementation
+│   │   └── Types.hs              # Type checking data types
+│   ├── Compiler/
+│   │   ├── Core.hs               # Main compiler
+│   │   ├── Environment.hs        # Variable/function tables
+│   │   ├── Expr.hs               # Expression compilation
+│   │   ├── Statement.hs          # Statement compilation
+│   │   └── Function.hs           # Function compilation
+│   ├── IR/
+│   │   └── Types.hs              # IR instruction types
+│   ├── Bytecode/
+│   │   └── Serialize.hs          # Bytecode serialization
+│   ├── VM/
+│   │   ├── Interpreter.hs        # VM execution
+│   │   ├── HelperFunc.hs         # VM helper functions
+│   │   └── InstructionHandlers.hs # Instruction execution handlers
+│   ├── Error/
+│   │   └── Types.hs              # Error types
+│   └── Main.hs                   # Entry point
 ```
 
 ### Data Flow
 
 1. **Main.hs**: Reads source code from stdin or file
-2. **Parser.hs**: Lexes and parses into AST
-3. **Compiler.hs**: Generates IR (human-readable disassembly)
-4. **Bytecode.hs**: Compiles IR into bytecode
-5. **VM.hs**: Executes bytecode and produces result
+2. **Parser/Core.hs**: Lexes and parses into AST
+3. **Compiler/Core.hs**: Generates IR (human-readable disassembly)
+4. **Bytecode/Serialize.hs**: Compiles IR into bytecode
+5. **VM/Interpreter.hs**: Executes bytecode and produces result
 6. **Main.hs**: Prints result or error (exit code 0 or 84)
 
 ### Compiler Modes
