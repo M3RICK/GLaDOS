@@ -482,7 +482,7 @@ checkStatements globalEnv env returnType stmts =
 checkStatement :: GlobalEnv -> Type -> LocalEnv -> Statement -> Either String LocalEnv
 checkStatement globalEnv returnType env stmt =
   case stmt of
-    VarDecl ty name init ->
+    Decl ty name init ->
       checkVarDecl globalEnv env ty name init
 
     Assign name expr ->
