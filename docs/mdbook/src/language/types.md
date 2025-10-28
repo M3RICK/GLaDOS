@@ -160,13 +160,15 @@ float b = a + 2.0;
 
 ### Type Inference
 
-Variable types must be **explicitly declared**. GLaDOS does not infer types:
+Variable types must be **explicitly declared** at the user level. GLaDOS does not provide user-facing type inference:
 
 ```c
 var x = 42;
 
 int x = 42;
 ```
+
+**Note:** While the compiler uses an internal `TypeInfer` type during type checking for intermediate expressions, this is not exposed to user code. All variable declarations must have explicit type annotations.
 
 ## Function Types
 
@@ -492,9 +494,11 @@ The type checker maintains:
 
 ## Limitations and Design Choices
 
-### No Type Inference
+### No User-Level Type Inference
 
 Variables must have explicit type declarations. This is by design for simplicity and clarity.
+
+**Note:** The compiler internally uses a `TypeInfer` type during type checking for intermediate expressions, but this is not exposed to user code. All variable and parameter declarations require explicit type annotations.
 
 ### No Implicit Conversions
 
