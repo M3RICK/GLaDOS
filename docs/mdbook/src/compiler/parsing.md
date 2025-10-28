@@ -306,48 +306,103 @@ data FuncDef = FuncDef
 
 ```haskell
 data Statement
-  = VarDecl Type String (Maybe Expr)  -- int x = 5;
+  = Decl Type String (Maybe Expr)      -- int x = 5;
   | Assign String Expr                 -- x = 10;
   | If Expr [Statement] (Maybe [Statement])  -- if (...) {...} else {...}
   | While Expr [Statement]             -- while (...) {...}
+  | For (Maybe Statement)              -- for (init; cond; incr) {...}
+        (Maybe Expr)
+        (Maybe Statement)
+        [Statement]
   | Return Expr                        -- return x;
   | ExprStmt Expr                      -- functionCall();
 ```
+
+**For Loop Structure:**
+- First `Maybe Statement`: Optional initialization (declaration or assignment)
+- `Maybe Expr`: Optional condition expression
+- Second `Maybe Statement`: Optional increment statement
+- `[Statement]`: Loop body
 
 ### Expression Nodes
 
 ```haskell
 data Expr
-  = Lit Literal                        -- 42, true
-  | Var String                         -- x
-  | Call String [Expr]                 -- foo(a, b)
-  | BinOp BinOp Expr Expr              -- a + b
+  = BoolLit (Located Bool)             -- true, false (with source position)
+  | NumLit (Located Int)               -- 42, -10 (with source position)
+  | FloatLit (Located Double)          -- 3.14, -0.5 (with source position)
+  | Var (Located String)               -- x (with source position)
+  | BinOp Op (Located Expr) (Located Expr)  -- a + b
+  | UnOp UnOp (Located Expr)           -- -x, !flag
+  | Call (Located String) [Expr]       -- foo(a, b)
 ```
+
+**Note:** All expressions are wrapped with `Located` to track source positions for better error messages.
 
 ### Binary Operators
 
 ```haskell
-data BinOp
+data Op
   = Add | Sub | Mul | Div              -- Arithmetic
-  | Eq | Neq | Lt | Gt | Lte | Gte     -- Comparison
+  | Eq | Neq | Lt | Gt | Le | Ge       -- Comparison
   | And | Or                           -- Logical
+```
+
+### Unary Operators
+
+```haskell
+data UnOp
+  = Neg                                -- Negation: -x
+  | Not                                -- Logical NOT: !x
 ```
 
 ### Literals
 
-```haskell
-data Literal
-  = IntLit Int64                       -- 42
-  | BoolLit Bool                       -- true, false
-```
+Literals are now represented directly in expression nodes rather than a separate `Literal` type:
+
+- `NumLit (Located Int)`: Integer literals like `42`, `-10`
+- `FloatLit (Located Double)`: Floating-point literals like `3.14`, `-0.5`
+- `BoolLit (Located Bool)`: Boolean literals `true`, `false`
 
 ### Types
 
 ```haskell
 data Type
-  = TInt                               -- int
-  | TBool                              -- bool
+  = TypeInt                            -- int
+  | TypeFloat                          -- float
+  | TypeBool                           -- bool
+  | TypeVoid                           -- void
+  | TypeInfer                          -- Internal use only
 ```
+
+**Note:** `TypeInfer` is used internally by the compiler for type inference and should not appear in parsed AST.
+
+### Located Wrapper
+
+All AST nodes that require error reporting are wrapped with source position information:
+
+```haskell
+data Located a = Located
+  { pos :: SourcePos                   -- Source file position
+  , value :: a                         -- Actual value
+  }
+
+data SourcePos = SourcePos
+  { sourceName :: String               -- File name
+  , sourceLine :: Int                  -- Line number
+  , sourceColumn :: Int                -- Column number
+  }
+```
+
+**Purpose:** The `Located` wrapper enables precise error messages by tracking where each construct appears in the source code.
+
+**Example Error Message:**
+```
+Type error at line 10, column 5:
+  Variable 'x' used before initialization
+```
+
+Without `Located`, the compiler could only report "Variable 'x' used before initialization" without indicating where in the code this occurred.
 
 ## Error Handling
 
