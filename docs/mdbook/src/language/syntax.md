@@ -244,6 +244,72 @@ while (x > 0) {
 }
 ```
 
+### For Loops
+
+```c
+for (init; condition; increment) {
+
+}
+```
+
+**Example:**
+```c
+int sum(int n) {
+    int total = 0;
+    for (int i = 1; i <= n; i = i + 1) {
+        total = total + i;
+    }
+    return total;
+}
+```
+
+**All clauses are optional:**
+```c
+for (;;) {
+    if (done) {
+        return;
+    }
+}
+
+for (int i = 0; i < 10; i = i + 1) {
+
+}
+
+int i = 0;
+for (; i < 10; i = i + 1) {
+
+}
+
+int i = 0;
+for (; i < 10;) {
+    i = i + 1;
+}
+```
+
+**Init clause can be declaration or assignment:**
+```c
+for (int i = 0; i < 10; i = i + 1) {
+
+}
+
+int i;
+for (i = 0; i < 10; i = i + 1) {
+
+}
+```
+
+**Important:** The condition must be a `bool` (when provided):
+```c
+for (int i = 0; i < 10; i = i + 1) {
+
+}
+
+int i = 0;
+for (; i;) {
+    i = i - 1;
+}
+```
+
 ## Comments
 
 GLaDOS supports C-style comments:
