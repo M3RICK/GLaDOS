@@ -36,12 +36,10 @@ int add(int a, int b) {
 Functions can take zero or more parameters:
 
 ```c
-// No parameters
 int getFortyTwo() {
     return 42;
 }
 
-// Multiple parameters
 int multiply(int x, int y) {
     return x * y;
 }
@@ -52,7 +50,6 @@ int multiply(int x, int y) {
 Every non-void function **must** return a value on all code paths:
 
 ```c
-// ✓ GOOD - returns on all paths
 int abs(int x) {
     if (x < 0) {
         return -x;
@@ -61,14 +58,65 @@ int abs(int x) {
     }
 }
 
-// ✗ BAD - missing return in some paths
 int bad(int x) {
     if (x > 0) {
         return 1;
     }
-    // ERROR: no return here
 }
 ```
+
+### Function Prototypes (Forward Declarations)
+
+Functions can be declared before they are defined using prototypes. This enables mutual recursion and allows you to organize code with definitions after usage.
+
+**Syntax:**
+```c
+<return_type> <function_name>(<parameters>);
+```
+
+**Examples:**
+```c
+int helper(int x);
+bool isValid(int value);
+
+int helper(int x) {
+    return x * 2;
+}
+
+bool isValid(int value) {
+    return helper(value) > 0;
+}
+```
+
+**Use Cases:**
+- Mutual recursion between functions
+- Organize code with definitions after main
+- Separate interface from implementation
+
+**Mutual Recursion Example:**
+```c
+int isEven(int n);
+int isOdd(int n);
+
+int isEven(int n) {
+    if (n == 0) {
+        return 1;
+    }
+    return isOdd(n - 1);
+}
+
+int isOdd(int n) {
+    if (n == 0) {
+        return 0;
+    }
+    return isEven(n - 1);
+}
+```
+
+**Important Notes:**
+- Prototype signature must match the actual function definition
+- Parameters can be named in prototypes, but names are ignored
+- Prototypes are particularly useful for mutually recursive functions
 
 ## Variables
 
@@ -97,7 +145,7 @@ Variables can be assigned after declaration:
 ```c
 int x;
 x = 5;
-x = x + 1;  // x is now 6
+x = x + 1;
 ```
 
 ## Types
@@ -114,13 +162,10 @@ GLaDOS supports two primitive types:
 GLaDOS is **strictly typed**. You cannot mix types:
 
 ```c
-// ✗ ERROR: Type mismatch
 int x = true;
 
-// ✗ ERROR: Cannot add int and bool
 int y = 5 + true;
 
-// ✓ GOOD
 int x = 42;
 bool flag = false;
 ```
@@ -130,16 +175,16 @@ bool flag = false;
 ### Arithmetic Operators
 
 ```c
-int a = 10 + 5;   // Addition: 15
-int b = 10 - 5;   // Subtraction: 5
-int c = 10 * 5;   // Multiplication: 50
-int d = 10 / 5;   // Division: 2
+int a = 10 + 5;
+int b = 10 - 5;
+int c = 10 * 5;
+int d = 10 / 5;
 ```
 
 **Note:** Division by zero is detected at compile-time for literals:
 
 ```c
-int x = 10 / 0;  // ✗ COMPILE ERROR: Division by zero
+int x = 10 / 0;
 ```
 
 ### Comparison Operators
@@ -147,19 +192,19 @@ int x = 10 / 0;  // ✗ COMPILE ERROR: Division by zero
 All comparison operators return `bool`:
 
 ```c
-bool a = 5 == 5;   // Equal: true
-bool b = 5 != 3;   // Not equal: true
-bool c = 5 < 10;   // Less than: true
-bool d = 5 > 10;   // Greater than: false
-bool e = 5 <= 5;   // Less or equal: true
-bool f = 5 >= 10;  // Greater or equal: false
+bool a = 5 == 5;
+bool b = 5 != 3;
+bool c = 5 < 10;
+bool d = 5 > 10;
+bool e = 5 <= 5;
+bool f = 5 >= 10;
 ```
 
 ### Logical Operators
 
 ```c
-bool a = true && false;   // AND: false
-bool b = true || false;   // OR: true
+bool a = true && false;
+bool b = true || false;
 ```
 
 ### Operator Precedence
@@ -175,8 +220,8 @@ From highest to lowest:
 Use parentheses to override precedence:
 
 ```c
-int x = 2 + 3 * 4;      // 14 (multiplication first)
-int y = (2 + 3) * 4;    // 20 (parentheses first)
+int x = 2 + 3 * 4;
+int y = (2 + 3) * 4;
 ```
 
 ## Control Flow
@@ -185,7 +230,7 @@ int y = (2 + 3) * 4;    // 20 (parentheses first)
 
 ```c
 if (condition) {
-    // executed if condition is true
+
 }
 ```
 
@@ -193,9 +238,9 @@ if (condition) {
 
 ```c
 if (condition) {
-    // executed if true
+
 } else {
-    // executed if false
+
 }
 ```
 
@@ -214,7 +259,7 @@ int max(int a, int b) {
 
 ```c
 while (condition) {
-    // repeated while condition is true
+
 }
 ```
 
@@ -233,12 +278,10 @@ int factorial(int n) {
 **Important:** The condition must be a `bool`:
 
 ```c
-// ✗ ERROR: int where bool expected
 while (x) {
     x = x - 1;
 }
 
-// ✓ GOOD
 while (x > 0) {
     x = x - 1;
 }
@@ -322,7 +365,7 @@ GLaDOS supports C-style comments:
    comment
 */
 
-int x = 42;  // End-of-line comment
+int x = 42;
 ```
 
 ## Semicolons
@@ -388,11 +431,11 @@ Any expression can be used as a statement (useful for function calls with side e
 
 ```c
 int print(int x) {
-    return x;  // Pretend this prints
+    return x;
 }
 
 int main() {
-    print(42);  // Expression statement
+    print(42);
     return 0;
 }
 ```
@@ -409,24 +452,19 @@ int main() {
 ## Common Mistakes
 
 ```c
-// ✗ Using uninitialized variables
 int x;
-return x;  // ERROR: x not initialized
+return x;
 
-// ✗ Type mismatch
 int getValue() {
-    return true;  // ERROR: bool returned from int function
+    return true;
 }
 
-// ✗ Missing else branch return
 int bad(int x) {
     if (x > 0) {
         return 1;
     }
-    // ERROR: no return if x <= 0
 }
 
-// ✗ Wrong argument count
 int add(int a, int b) { return a + b; }
-int x = add(5);  // ERROR: expected 2 args, got 1
+int x = add(5);
 ```
