@@ -426,10 +426,11 @@ Program
 
 ### Semicolon Flexibility
 
-GLaDOS makes semicolons **optional** in most contexts:
+GLaDOS makes semicolons **optional** after statements:
 
 ```haskell
-optional (symbol ";")
+optionalSemi :: Parser ()
+optionalSemi = optional semi >> return ()
 ```
 
 This allows both styles:
@@ -441,6 +442,14 @@ return x;
 int x = 5
 return x
 ```
+
+**Exception:** Semicolons are **required** in for loop syntax to separate the clauses:
+
+```haskell
+void semi
+```
+
+The for loop parser uses `void semi` (not `optionalSemi`) for the clause separators, making them mandatory.
 
 ### Expression Precedence
 
