@@ -51,6 +51,12 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 <return_statement> ::= "return" <expression>
 ```
 
+**Note on Semicolons:**
+
+While the grammar shows semicolons after statements (declaration, assignment, return), they are **optional** in the actual implementation. The parser accepts statements with or without trailing semicolons.
+
+However, semicolons are **required** in for loop syntax to separate the three clauses (`init`, `condition`, `increment`), as shown in the `<for_statement>` rule above.
+
 ## Expressions
 
 ```bnf
