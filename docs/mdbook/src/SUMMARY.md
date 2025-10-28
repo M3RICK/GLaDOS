@@ -21,6 +21,7 @@
 - [Parsing](./compiler/parsing.md)
 - [Type Checking](./compiler/type-checking.md)
 - [IR Generation](./compiler/ir-generation.md)
+- [Linker](./compiler/linker.md)
 - [VM Execution](./compiler/vm-execution.md)
 
 # Development Guide
