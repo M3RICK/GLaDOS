@@ -5,11 +5,15 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 ## Program Structure
 
 ```bnf
-<program> ::= <function_list>
+<program> ::= <top_level_list>
 
-<function_list> ::= <function> | <function> <function_list>
+<top_level_list> ::= <top_level> | <top_level> <top_level_list>
+
+<top_level> ::= <function> | <function_prototype>
 
 <function> ::= <type> <identifier> "(" <parameters> ")" "{" <statement_list> "}"
+
+<function_prototype> ::= <type> <identifier> "(" <parameters> ")" ";"
 ```
 
 ## Parameters
@@ -81,6 +85,7 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 
 The grammar supports:
 - **Functions** with parameters and return values
+- **Function Prototypes** (forward declarations) for mutual recursion
 - **Types**: `int` and `bool`
 - **Statements**: variable declaration, assignment, if/else, while, for, return
 - **Expressions**: numbers, booleans, identifiers, arithmetic operators, boolean operators
@@ -126,6 +131,26 @@ int sum(int n) {
         total = total + i;
     }
     return total;
+}
+```
+
+### Function Prototypes (Mutual Recursion)
+```c
+int isEven(int n);
+int isOdd(int n);
+
+int isEven(int n) {
+    if (n == 0) {
+        return 1;
+    }
+    return isOdd(n - 1);
+}
+
+int isOdd(int n) {
+    if (n == 0) {
+        return 0;
+    }
+    return isEven(n - 1);
 }
 ```
 
