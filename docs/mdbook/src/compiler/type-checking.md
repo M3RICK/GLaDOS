@@ -4,7 +4,7 @@ This page details the GLaDOS type checking system, which ensures type safety and
 
 ## Overview
 
-The type checker is implemented in `src/Compiler.hs` and performs:
+The type checker is implemented in `src/Security/TypeChecker.hs` and performs:
 
 1. **Type inference**: Determine the type of every expression
 2. **Type compatibility**: Verify operations use correct types
