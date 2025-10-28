@@ -1,11 +1,11 @@
 module CompilerSpec (spec) where
 
 import Test.Hspec
-import Text.Megaparsec.Pos (SourcePos, initialPos)
+import Text.Megaparsec.Pos (initialPos)
 import qualified Data.Map as M
 import AST.AST
 import qualified IR.Types as IR
-import IR.Types (IRProgram(..), CompiledFunction(..), Value(..))
+import IR.Types (IRProgram(..), CompiledFunction(..))
 import Compiler.Core (compileProgram)
 import Compiler.Expr (compileExpr)
 import Compiler.Statement (compileStatement, compileStatements)
@@ -473,7 +473,7 @@ spec = do
                 let varTable = M.fromList [("i", 0)]
                 let env = checkEnvWithVar "i" TypeInt
                 case compileStatement env M.empty varTable stmt of
-                    Right code -> length code `shouldSatisfy` (> 0)
+                    Right instructions -> length instructions `shouldSatisfy` (> 0)
                     Left _ -> expectationFailure "Expected successful compilation"
 
             it "compiles for loop with no init" $ do
@@ -541,7 +541,7 @@ spec = do
                 let outerIf = If (BoolLit (loc False)) [innerIf] Nothing
                 let env = checkEnvWithVar "dummy" TypeBool
                 case compileStatement env M.empty M.empty outerIf of
-                    Right code -> length code `shouldSatisfy` (> 0)
+                    Right instructions -> length instructions `shouldSatisfy` (> 0)
                     Left _ -> expectationFailure "Expected successful compilation"
 
             it "compiles if inside while loop" $ do
@@ -549,7 +549,7 @@ spec = do
                 let whileStmt = While (BoolLit (loc True)) [innerIf]
                 let env = checkEnvWithVar "dummy" TypeBool
                 case compileStatement env M.empty M.empty whileStmt of
-                    Right code -> length code `shouldSatisfy` (> 0)
+                    Right instructions -> length instructions `shouldSatisfy` (> 0)
                     Left _ -> expectationFailure "Expected successful compilation"
 
 -- ============================================================================
