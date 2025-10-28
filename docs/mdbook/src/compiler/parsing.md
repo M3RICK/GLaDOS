@@ -435,11 +435,9 @@ optional (symbol ";")
 This allows both styles:
 
 ```c
-// With semicolons
 int x = 5;
 return x;
 
-// Without semicolons
 int x = 5
 return x
 ```
@@ -449,10 +447,8 @@ return x
 The operator table ensures correct precedence:
 
 ```c
-// Parsed as: 2 + (3 * 4)
 int x = 2 + 3 * 4;
 
-// Parsed as: (5 > 3) && (10 < 20)
 bool b = 5 > 3 && 10 < 20;
 ```
 
@@ -479,14 +475,6 @@ int factorial(int n) {
 ```
 
 ## Parser Limitations
-
-### No Forward Declarations
-
-Functions must be defined before being called. The type checker resolves this by building a global environment first.
-
-### No Mutual Recursion
-
-Direct mutual recursion is not supported (but can be achieved through careful ordering).
 
 ### Limited Error Recovery
 
