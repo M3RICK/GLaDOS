@@ -42,6 +42,8 @@ This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 
 ```bnf
 <declaration> ::= <type> <identifier>
+                | <type> <identifier> "=" <expression>
+                | "var" <identifier> "=" <expression>
 <assignment> ::= <identifier> "=" <expression>
 <if_statement> ::= "if" "(" <expression> ")" "{" <statement_list> "}" <else_clause>
 <else_clause> ::= ε | "else" "{" <statement_list> "}"
@@ -100,6 +102,7 @@ The grammar supports:
 - **Functions** with parameters and return values
 - **Function Prototypes** (forward declarations) for mutual recursion
 - **Types**: `int`, `float`, `bool`, and `void`
+- **Type inference** with `var` keyword (requires initialization)
 - **Statements**: variable declaration, assignment, if/else, while, for, return
 - **Expressions**: integers, floats, booleans, identifiers, unary operators, arithmetic operators, boolean operators
 - **Comments**: C-style `//` line comments and `/* */` block comments
@@ -192,6 +195,21 @@ int negate(int x) {
 
 bool invert(bool flag) {
     return !flag;
+}
+```
+
+### Type Inference with var
+```c
+int compute(int x, int y) {
+    var sum = x + y;           // Inferred as int
+    var product = x * y;       // Inferred as int
+    var average = sum / 2;     // Inferred as int
+    return average;
+}
+
+float calculate(float a, float b) {
+    var result = a * b;        // Inferred as float
+    return result;
 }
 ```
 
