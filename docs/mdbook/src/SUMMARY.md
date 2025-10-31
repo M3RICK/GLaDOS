@@ -27,6 +27,7 @@
 # Development Guide
 
 - [Error Messages](./development/error-messages.md)
+- [Design Decisions](./development/design-decisions.md)
 
 # Security
 
