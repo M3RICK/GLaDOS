@@ -30,8 +30,7 @@
 
 # Security
 
-- [Security Features](./security/features.md)
-- [Language Comparison](./security/comparison.md)
+- [Security](./security/Security.md)
 
 # Team
 
