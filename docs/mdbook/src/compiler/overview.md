@@ -4,44 +4,49 @@ GLaDOS is a compiled language that transforms source code through multiple stage
 
 ## Compilation Pipeline
 
-The GLaDOS compiler follows a multi-stage architecture:
+The GLaDOS compiler follows a multi-stage architecture with multiple entry and exit points:
 
 ```
-Source Code (.c file)
-       ↓
-  [1. Parsing]
-  (Lexing + Parsing combined via Megaparsec)
-       ↓
-  Abstract Syntax Tree (AST)
-       ↓
-  [2. Type Checking]
-  (Security/TypeChecker.hs)
-       ↓
-  Type-Checked AST
-       ↓
-  [3. IR Compilation]
-  (Compiler/Core.hs)
-       ↓
-  IR Program (CompiledFunction list)
-  (can be outputted with --ir flag)
-       ↓
-  [4. Bytecode Serialization] (Optional)
-  (For saving to .gbc files)
-       ↓
-    Bytecode (.gbc)
-       ↓
-  [5. Linking] (Optional)
-  (For multi-module programs)
-       ↓
-  Linked Program
-       ↓
-  [6. VM Execution]
+Source Code (.c file)   ────────────────────────┐
+       ↓                                        │
+  [1. Parsing]                                  │
+  (Lexing + Parsing via Megaparsec)             │
+       ↓                                        │
+  Abstract Syntax Tree (AST) ──────> --ast (output AST)
+       ↓                                        │
+  [2. Type Checking]                            │
+  (Security/TypeChecker.hs)                     │
+       ↓                                        │
+  Type-Checked AST                              │
+       ↓                                        │
+  [3. IR Compilation]                           │
+  (Compiler/Core.hs)                            │
+       ↓                                        │
+  IR Program ──────────────────────> --ir (output IR)
+       ↓                                        │
+  [4. Bytecode Serialization]                   │
+  (Optional - for .gbc files)                   │
+       ↓                                        │
+  Bytecode (.gbc) ──────────────────> --compile (output .gbc)
+       │                                        │
+       ├──> --run FILE ──────────┐              │
+       │   (Skip parsing, load   │              │
+       │    bytecode directly)   │              │
+       ↓                         ↓              │
+  [5. Linking] (Optional)                       │
+  (For multi-module programs)                   │
+       ↓                                        │
+  Linked Program                                │
+       ↓                                        │
+  [6. VM Execution] <───────────────────────────┘
   (VM/Interpreter.hs)
        ↓
-    Result
+  Result (exit code) ───────────────> Default mode (output result)
 ```
 
 **Key Points:**
+- **Multiple output modes**: Can output at AST, IR, bytecode, or execution result stages
+- **Bytecode entry point**: `--run` mode skips parsing/compilation and loads bytecode directly
 - **Lexing and parsing** are combined in a single stage using Megaparsec
 - **Type checking** is a critical stage that validates type safety before compilation
 - **IR compilation** generates WebAssembly-like indexed bytecode
@@ -377,16 +382,19 @@ The GLaDOS compiler supports multiple modes of operation:
 
 | Mode | Usage | Description |
 |------|-------|-------------|
-| **Default** | `./glados < program.c` | Read from stdin, compile and execute |
+| **Default** | `./glados < program.c` | Read from stdin, compile and execute, output result |
 | **AST Mode** | `./glados --ast < program.c` | Parse and display the Abstract Syntax Tree |
 | **IR Mode** | `./glados --ir < program.c` | Parse, compile and display human-readable IR |
 | **Compile Mode** | `./glados --compile < program.c > out.gbc` | Compile to bytecode and write to stdout |
-| **Run Mode** | `./glados --run program.gbc` | Execute bytecode from FILE |
+| **Compile Object** | `./glados --compile-obj < module.c > module.gbo` | Compile to relocatable object file for linking |
+| **Link Mode** | `./glados --link mod1.gbo mod2.gbo -o prog.gbc` | Link multiple object files into executable |
+| **Run Mode** | `./glados --run program.gbc` | Execute bytecode from FILE (skips parsing/compilation) |
 | **Help** | `./glados --help` | Display help message |
+| **Version** | `./glados --version` | Display version information |
 
 **Examples:**
 ```bash
-# Compile and execute
+# Compile and execute (default mode)
 ./glados < program.c
 
 # Show the AST for debugging
@@ -398,11 +406,21 @@ The GLaDOS compiler supports multiple modes of operation:
 # Compile to bytecode file
 ./glados --compile < program.c > program.gbc
 
-# Execute bytecode
+# Execute pre-compiled bytecode (fast - skips parsing)
+./glados --run program.gbc
+
+# Separate compilation with linking
+./glados --compile-obj < module_a.c > module_a.gbo
+./glados --compile-obj < module_b.c > module_b.gbo
+./glados --link module_a.gbo module_b.gbo -o program.gbc
 ./glados --run program.gbc
 ```
 
-These modes are useful for debugging, understanding the compilation process, and creating distributable bytecode
+These modes provide flexibility for:
+- **Debugging**: View AST and IR representations
+- **Development**: Separate compilation for faster incremental builds
+- **Distribution**: Create standalone bytecode files
+- **Performance**: Skip compilation when running pre-compiled bytecode
 
 ## Implementation Details
 
