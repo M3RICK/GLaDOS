@@ -1,78 +1,82 @@
 # Compilation Overview
 
-> **WARNING**: This page is still being completed. Some of the information is false and filled with temporary dummy information.
-
 GLaDOS is a compiled language that transforms source code through multiple stages to produce executable bytecode. This page provides a high-level overview of the compilation pipeline.
 
 ## Compilation Pipeline
 
-The GLaDOS compiler follows a multi-stage architecture:
+The GLaDOS compiler follows a multi-stage architecture with multiple entry and exit points:
 
 ```
-Source Code (.c file)
+Source Code (.c file)   ────────────────────────┐
+       ↓                                        │
+  [1. Parsing]                                  │
+  (Lexing + Parsing via Megaparsec)             │
+       ↓                                        │
+  Abstract Syntax Tree (AST) ──────> --ast (output AST)
+       ↓                                        │
+  [2. Type Checking]                            │
+  (Security/TypeChecker.hs)                     │
+       ↓                                        │
+  Type-Checked AST                              │
+       ↓                                        │
+  [3. IR Compilation]                           │
+  (Compiler/Core.hs)                            │
+       ↓                                        │
+  IR Program ──────────────────────> --ir (output IR)
+       ↓                                        │
+  [4. Bytecode Serialization]                   │
+  (Optional - for .gbc files)                   │
+       ↓                                        │
+  Bytecode (.gbc) ──────────────────> --compile (output .gbc)
+       │                                        │
+       ├──> --run FILE ──────────┐              │
+       │   (Skip parsing, load   │              │
+       │    bytecode directly)   │              │
+       ↓                         ↓              │
+  [5. Linking] (Optional)                       │
+  (For multi-module programs)                   │
+       ↓                                        │
+  Linked Program                                │
+       ↓                                        │
+  [6. VM Execution] <───────────────────────────┘
+  (VM/Interpreter.hs)
        ↓
-  [1. Lexing]
-       ↓
-    Tokens
-       ↓
-  [2. Parsing]
-       ↓
-  Abstract Syntax Tree (AST)
-       ↓
-  [3. IR Generation]
-       ↓
-  IR (Human-Readable Disassembly)
-  (can be outputted with flag)
-       ↓
-  [4. Bytecode Generation]
-       ↓
-    Bytecode
-  (can be outputted with flag)
-       ↓
-  [5. VM Execution]
-       ↓
-    Result
+  Result (exit code) ───────────────> Default mode (output result)
 ```
 
-## Stage 1: Lexical Analysis (Lexing)
+**Key Points:**
+- **Multiple output modes**: Can output at AST, IR, bytecode, or execution result stages
+- **Bytecode entry point**: `--run` mode skips parsing/compilation and loads bytecode directly
+- **Lexing and parsing** are combined in a single stage using Megaparsec
+- **Type checking** is a critical stage that validates type safety before compilation
+- **IR compilation** generates WebAssembly-like indexed bytecode
+- **Bytecode serialization** is optional, only needed for saving to disk
+- **Linking** is optional, only needed for multi-module programs
+
+## Stage 1: Parsing (Lexing + Parsing)
 
 **Input**: Source code (string)
-**Output**: Token stream
-**Module**: `Parser.hs` (using Megaparsec)
-
-The lexer scans the source code and breaks it into **tokens** - the smallest meaningful units:
-
-**Example:**
-```c
-int add(int a, int b) {
-    return a + b;
-}
-```
-
-**Tokens:**
-```haskell
-[ TInt, TIdentifier "add", TLParen
-, TInt, TIdentifier "a", TComma
-, TInt, TIdentifier "b", TRParen
-, TLBrace, TReturn, TIdentifier "a"
-, TPlus, TIdentifier "b", TSemicolon
-, TRBrace
-]
-```
-
-**Key Features:**
-- Whitespace and comments are ignored
-- Keywords are recognized (`int`, `bool`, `if`, `while`, `return`, etc.)
-- Operators are tokenized (`+`, `-`, `*`, `/`, `==`, `&&`, etc.)
-- Identifiers and literals are captured
-
-## Stage 2: Syntactic Analysis (Parsing)
-
-**Input**: Token stream
 **Output**: Abstract Syntax Tree (AST)
-**Module**: `Parser.hs` (Megaparsec parser combinators)
+**Module**: `Parser/Core.hs` (using Megaparsec)
 
-The parser consumes tokens and builds a tree structure representing the program's syntax:
+Megaparsec combines lexical analysis and parsing into a single stage. The parser directly consumes source code and produces an AST, handling tokenization internally.
+
+**What happens internally:**
+
+1. **Lexical Analysis**: Source code is broken into tokens (keywords, operators, identifiers, literals)
+2. **Syntactic Analysis**: Tokens are structured into an AST tree
+
+**Lexer Features:**
+- Whitespace and comments are ignored
+- Keywords are recognized (`int`, `float`, `bool`, `void`, `if`, `while`, `for`, `return`, etc.)
+- Operators are tokenized (`+`, `-`, `*`, `/`, `==`, `&&`, `!`, etc.)
+- Identifiers and literals are captured with source positions
+
+**Parser Features:**
+- Recursive descent parsing with parser combinators
+- Operator precedence handling
+- Error recovery and detailed error reporting
+- Expression nesting support
 
 **Example AST for `int add(int a, int b) { return a + b; }`:**
 
@@ -81,8 +85,8 @@ Program
   [ Function
       (FuncDef
          { funcName = "add"
-         , funcReturnType = TInt
-         , funcParams = [("a", TInt), ("b", TInt)]
+         , funcReturnType = TypeInt
+         , funcParams = [("a", TypeInt), ("b", TypeInt)]
          , funcBody =
              [ Return
                  (BinOp Add
@@ -95,34 +99,69 @@ Program
   ]
 ```
 
-**Key Features:**
-- Recursive descent parsing
-- Operator precedence handling
-- Error recovery and reporting
-- Expression nesting support
+## Stage 2: Type Checking
 
-## Stage 3: IR Generation
+**Input**: Abstract Syntax Tree (AST)
+**Output**: Type-Checked AST (or type error)
+**Module**: `Security/TypeChecker.hs`
 
-**Input**: AST
-**Output**: Human-Readable IR (Disassembly)
-**Module**: `Compiler.hs`
+**Critical Stage:** The type checker validates the program's type safety before compilation. This prevents invalid programs from being compiled and executed.
 
-The compiler translates the AST into an intermediate representation (IR) - a human-readable disassembly format that represents the program's instructions:
+**Type Checking Operations:**
 
-**IR Instructions:**
-- `Push <value>`: Push value onto stack
-- `Pop`: Pop value from stack
-- `Load <var>`: Load variable value
-- `Store <var>`: Store value to variable
-- `Add`, `Sub`, `Mul`, `Div`: Arithmetic operations
-- `Eq`, `Neq`, `Lt`, `Gt`, `Lte`, `Gte`: Comparisons
-- `And`, `Or`: Logical operations
-- `Jump <label>`: Unconditional jump
-- `JumpIfFalse <label>`: Conditional jump
-- `Call <func> <arity>`: Function call
-- `Return`: Return from function
-- `Label <name>`: Jump target
-- `PopN <count>`: Pop N values from stack
+1. **Type Inference**: Determine the type of every expression
+2. **Type Compatibility**: Verify operations use correct types
+3. **Initialization Tracking**: Ensure variables are initialized before use
+4. **Return Path Analysis**: Verify all code paths return correct type
+5. **Function Validation**: Check function calls and signatures
+
+**Example Type Errors Caught:**
+```c
+int x = true;
+
+int y;
+return y;
+
+if (x > 0) {
+    return 1;
+}
+
+int result = add(5);
+```
+
+**Why "Security" Module?**
+Type checking is a security feature that prevents:
+- Type confusion vulnerabilities
+- Use of uninitialized memory
+- Missing return values causing undefined behavior
+- Function signature mismatches
+
+See [Type Checking](./type-checking.md) for detailed documentation.
+
+## Stage 3: IR Compilation
+
+**Input**: Type-Checked AST
+**Output**: IR Program (list of CompiledFunction)
+**Module**: `Compiler/Core.hs`
+
+The compiler translates the validated AST into an intermediate representation (IR) - a WebAssembly-like indexed bytecode:
+
+**Key Architectural Features:**
+- **Indexed Locals**: Variables accessed by integer index, not name
+- **Type-Specific Instructions**: Separate instructions for int, float, bool operations
+- **Offset-Based Jumps**: Relative jumps by instruction offset, not labels
+- **Function Indexing**: Functions called by index, not name
+
+**IR Instruction Categories:**
+
+1. **Stack Operations**: `PushInt`, `PushFloat`, `PushBool`, `Pop`
+2. **Local Variables**: `GetLocal <index>`, `SetLocal <index>`
+3. **Arithmetic**: `AddInt`, `AddFloat`, `SubInt`, `SubFloat`, `MulInt`, `MulFloat`, `DivInt`, `DivFloat`
+4. **Unary**: `NegInt`, `NegFloat`, `NotBool`
+5. **Comparison**: `EqInt`, `EqFloat`, `LtInt`, `LtFloat`, etc.
+6. **Logical**: `AndBool`, `OrBool`
+7. **Control Flow**: `Jump <offset>`, `JumpIfFalse <offset>`, `Call <funcIndex>`
+8. **Utility**: `Return`, `Halt`
 
 **Example:**
 ```c
@@ -131,52 +170,106 @@ int add(int a, int b) {
 }
 ```
 
-**IR (Human-Readable):**
+**Compiled IR:**
+```haskell
+CompiledFunction {
+  funcName = "add",
+  paramCount = 2,        -- a and b are params
+  localVarCount = 0,     -- no local variables
+  code = [
+    GetLocal 0,          -- Get parameter 'a' (index 0)
+    GetLocal 1,          -- Get parameter 'b' (index 1)
+    AddInt,              -- Type-specific int addition
+    Return
+  ]
+}
 ```
-Label "add"
-Load "a"
-Load "b"
-Add
-Return
-```
 
-This IR can be outputted using the appropriate compiler flag for debugging and inspection purposes.
+**Local Variable Indexing:**
+- Parameters are indexed first: `0, 1, 2, ...`
+- Local variables follow: `paramCount, paramCount+1, ...`
 
-## Stage 4: Bytecode Generation
+See [IR Generation](./ir-generation.md) for complete instruction set documentation.
 
-**Input**: IR (Human-Readable)
-**Output**: Bytecode
-**Module**: `Compiler.hs`
+## Stage 4: Bytecode Serialization (Optional)
 
-The IR is then compiled into compact bytecode format suitable for efficient execution by the VM. This bytecode can also be outputted with a flag for inspection.
+**Input**: IR Program (CompiledFunction list)
+**Output**: Bytecode file (.gbc)
+**Module**: `Bytecode/Serialize.hs`
+
+This stage is **optional** and only used when saving compiled programs to disk.
+
+**Purpose:**
+- Save compiled IR to `.gbc` (GLaDOS Bytecode) files
+- Enable separate compilation and distribution
+- Load pre-compiled programs for faster execution
 
 **Bytecode Format:**
-- Binary representation of IR instructions
-- Optimized for fast execution
-- Can be saved to disk and loaded later
+- Binary serialization of IR instructions
+- Compact representation for storage
+- Can be loaded and executed without recompilation
 
-## Stage 5: VM Execution
+**Usage:**
+```bash
+./glados --compile < program.c > program.gbc
+./glados --run program.gbc
+```
 
-**Input**: Bytecode
-**Output**: Program result
-**Module**: `VM.hs`
+## Stage 5: Linking (Optional)
 
-The virtual machine executes the bytecode using a stack-based model:
+**Input**: Multiple compiled modules (.gbc files)
+**Output**: Linked IR Program
+**Module**: Linker system (v1.3+)
 
-**VM Components:**
-- **Instruction Stack**: Current execution sequence
-- **Value Stack**: Runtime values
-- **Call Stack**: Function call frames
-- **Environment**: Variable bindings
-- **Program Counter**: Current instruction
+This stage is **optional** and only used for multi-module programs.
+
+**Purpose:**
+- Combine separately compiled modules
+- Resolve external function references
+- Create single executable program
+
+**How it works:**
+1. Each module compiled with function prototypes for external references
+2. Linker resolves function calls across module boundaries
+3. Produces single unified IR program
+
+**Usage:**
+```bash
+./glados --link module1.gbc module2.gbc -o program.gbc
+```
+
+See [Linker Documentation](./linker.md) for details (when available).
+
+## Stage 6: VM Execution
+
+**Input**: IR Program (CompiledFunction list)
+**Output**: Program result (exit code)
+**Module**: `VM/Interpreter.hs`
+
+The virtual machine executes the IR program using a stack-based model:
+
+**VM State:**
+```haskell
+data VMState = VMState
+  { stack :: [Value]           -- Operand stack
+  , locals :: [Value]          -- Indexed local variables
+  , pc :: Int                  -- Program counter
+  , callStack :: [CallFrame]   -- Function call frames
+  }
+```
+
+**Key Features:**
+- **Indexed Locals**: Variables stored in array by index, not Map by name
+- **Type Checking**: Stack operations validate types (popInt, popFloat, popBool)
+- **Stack-Based**: All operations use operand stack
+- **Call Frames**: Each function call creates isolated frame
 
 **Execution Model:**
 ```
-1. Fetch instruction
-2. Decode operation
-3. Execute operation (modify stack/environment)
-4. Update program counter
-5. Repeat until Return or end
+1. Fetch instruction at PC
+2. Execute instruction (modify stack/locals)
+3. Increment PC
+4. Repeat until Return or Halt
 ```
 
 **Example execution:**
@@ -190,57 +283,98 @@ int main() {
 
 **VM trace:**
 ```
-Push 5              Stack: [5]
-Store "x"           Stack: [], Env: {x=5}
-Push 10             Stack: [10]
-Store "y"           Stack: [], Env: {x=5, y=10}
-Load "x"            Stack: [5]
-Load "y"            Stack: [5, 10]
-Add                 Stack: [15]
+PushInt 5           Stack: [5]          Locals: []
+SetLocal 0          Stack: []           Locals: [5]        (x = 5)
+PushInt 10          Stack: [10]         Locals: [5]
+SetLocal 1          Stack: []           Locals: [5, 10]    (y = 10)
+GetLocal 0          Stack: [5]          Locals: [5, 10]    (load x)
+GetLocal 1          Stack: [5, 10]      Locals: [5, 10]    (load y)
+AddInt              Stack: [15]         Locals: [5, 10]    (5 + 10)
 Return              Result: 15
 ```
+
+See [VM Execution](./vm-execution.md) for complete execution details.
 
 ## Error Handling
 
 Errors can occur at each stage:
 
-### Lexing/Parsing Errors
+### Parsing Errors
 ```
-Parse error: unexpected token at line 5
-Parse error: unexpected end of input
+Parse error at line 5, column 10: unexpected token '{'
+Parse error at line 10: unexpected end of input, expecting statement
+```
+
+### Type Checking Errors
+```
+Type error at line 8: expected int but got bool
+Type error at line 12: variable 'x' used before initialization
+Type error at line 15: function 'add' expects 2 arguments but got 1
+Type error: function must return a value on all code paths
+```
+
+### Compilation Errors
+```
+Compile error: division by zero at line 20
 ```
 
 ### Runtime Errors
 ```
 Runtime error: Division by zero
 Runtime error: Stack underflow
-Runtime error: Undefined function
+Runtime error: Type mismatch in operation
 ```
 
 ## Compiler Architecture
 
 ### Module Structure
 
+GLaDOS uses a modularized architecture with separate directories for each major component:
+
 ```
 glados/
 ├── src/
-│   ├── AST.hs              # AST data types
-│   ├── Parser.hs           # Lexer and parser
-│   ├── Compiler.hs         # IR generation
-│   ├── IR.hs               # IR data types
-│   ├── Bytecode.hs         # Bytecode generation
-│   ├── VM.hs               # Virtual machine
-│   └── Main.hs             # Entry point
+│   ├── AST/
+│   │   └── AST.hs                # AST data types
+│   ├── Parser/
+│   │   ├── Core.hs               # Main parser export
+│   │   ├── Lexer.hs              # Lexer utilities
+│   │   ├── Program.hs            # Program parser
+│   │   ├── Statement.hs          # Statement parsers
+│   │   └── Expression.hs         # Expression parsers
+│   ├── Security/
+│   │   ├── Environment.hs        # Type checking environment
+│   │   ├── TypeChecker.hs        # Type checking implementation
+│   │   └── Types.hs              # Type checking data types
+│   ├── Compiler/
+│   │   ├── Core.hs               # Main compiler
+│   │   ├── Environment.hs        # Variable/function tables
+│   │   ├── Expr.hs               # Expression compilation
+│   │   ├── Statement.hs          # Statement compilation
+│   │   └── Function.hs           # Function compilation
+│   ├── IR/
+│   │   └── Types.hs              # IR instruction types
+│   ├── Bytecode/
+│   │   └── Serialize.hs          # Bytecode serialization
+│   ├── VM/
+│   │   ├── Interpreter.hs        # VM execution
+│   │   ├── HelperFunc.hs         # VM helper functions
+│   │   └── InstructionHandlers.hs # Instruction execution handlers
+│   ├── Error/
+│   │   └── Types.hs              # Error types
+│   └── Main.hs                   # Entry point
 ```
 
 ### Data Flow
 
 1. **Main.hs**: Reads source code from stdin or file
-2. **Parser.hs**: Lexes and parses into AST
-3. **Compiler.hs**: Generates IR (human-readable disassembly)
-4. **Bytecode.hs**: Compiles IR into bytecode
-5. **VM.hs**: Executes bytecode and produces result
-6. **Main.hs**: Prints result or error (exit code 0 or 84)
+2. **Parser/Core.hs**: Parses source code into AST
+3. **Security/TypeChecker.hs**: Validates type safety
+4. **Compiler/Core.hs**: Compiles AST to IR (indexed bytecode)
+5. **Bytecode/Serialize.hs** (optional): Serializes IR to .gbc file
+6. **Linker** (optional): Links multiple modules together
+7. **VM/Interpreter.hs**: Executes IR program
+8. **Main.hs**: Returns result (exit code 0 for success, 84 for error)
 
 ### Compiler Modes
 
@@ -248,16 +382,19 @@ The GLaDOS compiler supports multiple modes of operation:
 
 | Mode | Usage | Description |
 |------|-------|-------------|
-| **Default** | `./glados < program.c` | Read from stdin, compile and execute |
+| **Default** | `./glados < program.c` | Read from stdin, compile and execute, output result |
 | **AST Mode** | `./glados --ast < program.c` | Parse and display the Abstract Syntax Tree |
 | **IR Mode** | `./glados --ir < program.c` | Parse, compile and display human-readable IR |
 | **Compile Mode** | `./glados --compile < program.c > out.gbc` | Compile to bytecode and write to stdout |
-| **Run Mode** | `./glados --run program.gbc` | Execute bytecode from FILE |
+| **Compile Object** | `./glados --compile-obj < module.c > module.gbo` | Compile to relocatable object file for linking |
+| **Link Mode** | `./glados --link mod1.gbo mod2.gbo -o prog.gbc` | Link multiple object files into executable |
+| **Run Mode** | `./glados --run program.gbc` | Execute bytecode from FILE (skips parsing/compilation) |
 | **Help** | `./glados --help` | Display help message |
+| **Version** | `./glados --version` | Display version information |
 
 **Examples:**
 ```bash
-# Compile and execute
+# Compile and execute (default mode)
 ./glados < program.c
 
 # Show the AST for debugging
@@ -269,11 +406,21 @@ The GLaDOS compiler supports multiple modes of operation:
 # Compile to bytecode file
 ./glados --compile < program.c > program.gbc
 
-# Execute bytecode
+# Execute pre-compiled bytecode (fast - skips parsing)
+./glados --run program.gbc
+
+# Separate compilation with linking
+./glados --compile-obj < module_a.c > module_a.gbo
+./glados --compile-obj < module_b.c > module_b.gbo
+./glados --link module_a.gbo module_b.gbo -o program.gbc
 ./glados --run program.gbc
 ```
 
-These modes are useful for debugging, understanding the compilation process, and creating distributable bytecode
+These modes provide flexibility for:
+- **Debugging**: View AST and IR representations
+- **Development**: Separate compilation for faster incremental builds
+- **Distribution**: Create standalone bytecode files
+- **Performance**: Skip compilation when running pre-compiled bytecode
 
 ## Implementation Details
 

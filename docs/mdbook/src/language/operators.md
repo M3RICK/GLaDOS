@@ -4,90 +4,203 @@ This page provides a complete reference for all operators in GLaDOS, including p
 
 ## Operator Categories
 
-GLaDOS supports three categories of operators:
+GLaDOS supports four categories of operators:
 
-1. **Arithmetic Operators**: Mathematical operations on integers
-2. **Comparison Operators**: Relational comparisons returning booleans
-3. **Logical Operators**: Boolean logic operations
+1. **Unary Operators**: Single-operand operations (negation, logical not)
+2. **Arithmetic Operators**: Mathematical operations on integers and floats
+3. **Comparison Operators**: Relational comparisons returning booleans
+4. **Logical Operators**: Boolean logic operations
+
+## Unary Operators
+
+Unary operators take a single operand and produce a result.
+
+### Negation (`-`)
+
+**Syntax**: `-<expr>`
+
+**Type**: `-int → int` or `-float → float`
+
+**Description**: Negates a numeric value (changes sign)
+
+**Examples:**
+```c
+int x = -5;
+int y = -(10 + 3);
+int z = -x;
+
+float a = -3.14;
+float b = -(2.5 * 2.0);
+float c = -a;
+```
+
+**Type Rules:**
+- Operand must be `int` or `float`
+- Result type matches operand type
+- Cannot negate boolean values
+
+```c
+int x = -5;
+float y = -3.14;
+
+bool z = -true;
+```
+
+### Logical NOT (`!`)
+
+**Syntax**: `!<expr>`
+
+**Type**: `!bool → bool`
+
+**Description**: Inverts a boolean value
+
+**Truth Table:**
+| Input | Result |
+|-------|--------|
+| true  | false  |
+| false | true   |
+
+**Examples:**
+```c
+bool a = !true;
+bool b = !false;
+bool c = !(5 > 3);
+bool d = !(x && y);
+```
+
+**Type Rules:**
+- Operand must be `bool`
+- Result is always `bool`
+- Cannot negate numeric values
+
+```c
+bool x = !true;
+
+int y = !5;
+float z = !3.14;
+```
 
 ## Arithmetic Operators
 
-All arithmetic operators require **both operands to be `int`** and produce an `int` result.
+All arithmetic operators require **both operands to have the same numeric type** (`int` or `float`) and produce a result of the same type.
 
 ### Addition (`+`)
 
 **Syntax**: `<expr> + <expr>`
 
-**Type**: `int + int → int`
+**Type**: `int + int → int` or `float + float → float`
 
-**Description**: Adds two integers
+**Description**: Adds two numbers of the same type
 
 **Examples:**
 ```c
-int a = 5 + 3;        // 8
-int b = 10 + 20;      // 30
-int c = -5 + 10;      // 5
-int d = x + y;        // Sum of x and y
+int a = 5 + 3;
+int b = 10 + 20;
+int c = -5 + 10;
+int d = x + y;
+
+float e = 3.14 + 2.86;
+float f = 1.5 + 0.5;
+float g = pi + radius;
+```
+
+**Type Safety:**
+```c
+int x = 5 + 3.14;
+float y = 3.14 + 2;
 ```
 
 ### Subtraction (`-`)
 
 **Syntax**: `<expr> - <expr>`
 
-**Type**: `int - int → int`
+**Type**: `int - int → int` or `float - float → float`
 
-**Description**: Subtracts the second integer from the first
+**Description**: Subtracts the second number from the first
 
 **Examples:**
 ```c
-int a = 10 - 3;       // 7
-int b = 5 - 10;       // -5
-int c = x - 1;        // x decreased by 1
+int a = 10 - 3;
+int b = 5 - 10;
+int c = x - 1;
+
+float d = 10.5 - 3.2;
+float e = 2.0 - 0.5;
+float f = total - cost;
+```
+
+**Type Safety:**
+```c
+int x = 10 - 3.5;
+float y = 10.5 - 3;
 ```
 
 ### Multiplication (`*`)
 
 **Syntax**: `<expr> * <expr>`
 
-**Type**: `int * int → int`
+**Type**: `int * int → int` or `float * float → float`
 
-**Description**: Multiplies two integers
+**Description**: Multiplies two numbers of the same type
 
 **Examples:**
 ```c
-int a = 5 * 3;        // 15
-int b = 10 * -2;      // -20
-int c = n * n;        // n squared
+int a = 5 * 3;
+int b = 10 * -2;
+int c = n * n;
+
+float d = 3.14 * 2.0;
+float e = 1.5 * 4.0;
+float f = radius * radius;
+```
+
+**Type Safety:**
+```c
+int x = 5 * 2.0;
+float y = 3.14 * 2;
 ```
 
 ### Division (`/`)
 
 **Syntax**: `<expr> / <expr>`
 
-**Type**: `int / int → int`
+**Type**: `int / int → int` or `float / float → float`
 
-**Description**: Integer division (truncates toward zero)
+**Description**:
+- **Integer division**: Truncates toward zero
+- **Float division**: Produces floating-point result
 
 **Examples:**
 ```c
-int a = 10 / 2;       // 5
-int b = 15 / 4;       // 3 (truncated)
-int c = -10 / 3;      // -3 (truncated)
+int a = 10 / 2;
+int b = 15 / 4;
+int c = -10 / 3;
+
+float d = 10.0 / 3.0;
+float e = 22.0 / 7.0;
+float f = area / width;
+```
+
+**Type Safety:**
+```c
+int x = 10 / 2.0;
+float y = 10.0 / 2;
 ```
 
 **Important Notes:**
-- Division by zero with literal `0` is detected at **compile time**
+- Division by zero with literal `0` or `0.0` is detected at **compile time**
 - Division by zero with variables causes a **runtime error**
 
 ```c
-int x = 10 / 0;       // ✗ COMPILE ERROR: Division by zero
+int x = 10 / 0;
+float y = 10.0 / 0.0;
 
 int divide(int a, int b) {
-    return a / b;     // ✓ Compiles, but...
+    return a / b;
 }
 
 int main() {
-    return divide(10, 0);  // ✗ RUNTIME ERROR: Division by zero
+    return divide(10, 0);
 }
 ```
 
@@ -95,7 +208,14 @@ int main() {
 ```c
 int safeDivide(int a, int b) {
     if (b == 0) {
-        return 0;  // Or handle error appropriately
+        return 0;
+    }
+    return a / b;
+}
+
+float safeDivideFloat(float a, float b) {
+    if (b == 0.0) {
+        return 0.0;
     }
     return a / b;
 }
@@ -109,92 +229,152 @@ All comparison operators require **both operands to have the same type** and pro
 
 **Syntax**: `<expr> == <expr>`
 
-**Type**: `T == T → bool` (where T is int or bool)
+**Type**: `T == T → bool` (where T is int, float, or bool)
 
-**Description**: Tests if two values are equal
+**Description**: Tests if two values of the same type are equal
 
 **Examples:**
 ```c
-bool a = 5 == 5;           // true
-bool b = 10 == 3;          // false
-bool c = true == false;    // false
-bool d = x == y;           // true if x equals y
+bool a = 5 == 5;
+bool b = 10 == 3;
+bool c = true == false;
+bool d = x == y;
+
+bool e = 3.14 == 3.14;
+bool f = 1.5 == 2.0;
+bool g = pi == radius;
+```
+
+**Type Safety:**
+```c
+bool x = 5 == 3.14;
+bool y = true == 1;
 ```
 
 ### Not Equal (`!=`)
 
 **Syntax**: `<expr> != <expr>`
 
-**Type**: `T != T → bool` (where T is int or bool)
+**Type**: `T != T → bool` (where T is int, float, or bool)
 
-**Description**: Tests if two values are not equal
+**Description**: Tests if two values of the same type are not equal
 
 **Examples:**
 ```c
-bool a = 5 != 3;           // true
-bool b = 10 != 10;         // false
-bool c = true != false;    // true
+bool a = 5 != 3;
+bool b = 10 != 10;
+bool c = true != false;
+
+bool d = 3.14 != 2.0;
+bool e = 1.5 != 1.5;
+bool f = x != y;
+```
+
+**Type Safety:**
+```c
+bool x = 5 != 3.14;
+bool y = false != 0;
 ```
 
 ### Less Than (`<`)
 
 **Syntax**: `<expr> < <expr>`
 
-**Type**: `int < int → bool`
+**Type**: `int < int → bool` or `float < float → bool`
 
-**Description**: Tests if the first value is less than the second
+**Description**: Tests if the first numeric value is less than the second
 
 **Examples:**
 ```c
-bool a = 5 < 10;           // true
-bool b = 10 < 5;           // false
-bool c = 5 < 5;            // false
-bool d = x < 100;          // true if x is less than 100
+bool a = 5 < 10;
+bool b = 10 < 5;
+bool c = 5 < 5;
+bool d = x < 100;
+
+bool e = 3.14 < 4.0;
+bool f = 10.5 < 2.0;
+bool g = temperature < threshold;
+```
+
+**Type Safety:**
+```c
+bool x = 5 < 3.14;
+bool y = 3.14 < 5;
 ```
 
 ### Greater Than (`>`)
 
 **Syntax**: `<expr> > <expr>`
 
-**Type**: `int > int → bool`
+**Type**: `int > int → bool` or `float > float → bool`
 
-**Description**: Tests if the first value is greater than the second
+**Description**: Tests if the first numeric value is greater than the second
 
 **Examples:**
 ```c
-bool a = 10 > 5;           // true
-bool b = 5 > 10;           // false
-bool c = 5 > 5;            // false
+bool a = 10 > 5;
+bool b = 5 > 10;
+bool c = 5 > 5;
+
+bool d = 10.5 > 3.14;
+bool e = 2.0 > 10.5;
+bool f = value > maximum;
+```
+
+**Type Safety:**
+```c
+bool x = 10 > 3.14;
+bool y = 3.14 > 10;
 ```
 
 ### Less Than or Equal (`<=`)
 
 **Syntax**: `<expr> <= <expr>`
 
-**Type**: `int <= int → bool`
+**Type**: `int <= int → bool` or `float <= float → bool`
 
-**Description**: Tests if the first value is less than or equal to the second
+**Description**: Tests if the first numeric value is less than or equal to the second
 
 **Examples:**
 ```c
-bool a = 5 <= 10;          // true
-bool b = 10 <= 10;         // true
-bool c = 15 <= 10;         // false
+bool a = 5 <= 10;
+bool b = 10 <= 10;
+bool c = 15 <= 10;
+
+bool d = 3.14 <= 4.0;
+bool e = 10.5 <= 10.5;
+bool f = current <= limit;
+```
+
+**Type Safety:**
+```c
+bool x = 5 <= 3.14;
+bool y = 3.14 <= 10;
 ```
 
 ### Greater Than or Equal (`>=`)
 
 **Syntax**: `<expr> >= <expr>`
 
-**Type**: `int >= int → bool`
+**Type**: `int >= int → bool` or `float >= float → bool`
 
-**Description**: Tests if the first value is greater than or equal to the second
+**Description**: Tests if the first numeric value is greater than or equal to the second
 
 **Examples:**
 ```c
-bool a = 10 >= 5;          // true
-bool b = 10 >= 10;         // true
-bool c = 5 >= 10;          // false
+bool a = 10 >= 5;
+bool b = 10 >= 10;
+bool c = 5 >= 10;
+
+bool d = 10.5 >= 3.14;
+bool e = 5.0 >= 5.0;
+bool f = score >= passingGrade;
+```
+
+**Type Safety:**
+```c
+bool x = 10 >= 3.14;
+bool y = 3.14 >= 5;
 ```
 
 ## Logical Operators
@@ -219,19 +399,25 @@ All logical operators require **both operands to be `bool`** and produce a `bool
 
 **Examples:**
 ```c
-bool a = true && true;         // true
-bool b = true && false;        // false
-bool c = false && false;       // false
-bool d = (5 > 3) && (10 < 20); // true
-bool e = (x > 0) && (x < 100); // true if x is between 1 and 99
+bool a = true && true;
+bool b = true && false;
+bool c = false && false;
+bool d = (5 > 3) && (10 < 20);
+bool e = (x > 0) && (x < 100);
 ```
 
-**Short-Circuit Evaluation:**
-GLaDOS uses short-circuit evaluation: if the left operand is `false`, the right operand is not evaluated.
+**Note on Evaluation:**
+GLaDOS uses **eager evaluation** for logical operators. Both operands are always evaluated before the operation is performed. This means:
 
 ```c
-// If b is 0, the division is never performed
-bool safe = (b != 0) && (a / b > 5);
+// NOT safe in GLaDOS - both sides are evaluated
+bool result = (b != 0) && (a / b > 5);  // Will evaluate a/b even if b==0
+
+// Safe alternative - use nested if statements
+bool result = false;
+if (b != 0) {
+    result = (a / b > 5);
+}
 ```
 
 ### Logical OR (`||`)
@@ -252,14 +438,14 @@ bool safe = (b != 0) && (a / b > 5);
 
 **Examples:**
 ```c
-bool a = true || true;         // true
-bool b = true || false;        // true
-bool c = false || false;       // false
-bool d = (x < 0) || (x > 100); // true if x is negative or greater than 100
+bool a = true || true;
+bool b = true || false;
+bool c = false || false;
+bool d = (x < 0) || (x > 100);
 ```
 
-**Short-Circuit Evaluation:**
-If the left operand is `true`, the right operand is not evaluated.
+**Note on Evaluation:**
+Like `&&`, the `||` operator uses **eager evaluation**. Both operands are always evaluated before the operation is performed.
 
 ## Operator Precedence
 
@@ -267,24 +453,28 @@ Operators are evaluated in the following order (highest to lowest precedence):
 
 | Precedence | Operators | Description | Associativity |
 |------------|-----------|-------------|---------------|
-| 1 (highest) | `*`, `/` | Multiplicative | Left-to-right |
-| 2 | `+`, `-` | Additive | Left-to-right |
-| 3 | `<`, `>`, `<=`, `>=` | Relational | Left-to-right |
-| 4 | `==`, `!=` | Equality | Left-to-right |
-| 5 | `&&` | Logical AND | Left-to-right |
-| 6 (lowest) | `||` | Logical OR | Left-to-right |
+| 1 (highest) | `-`, `!` | Unary (negation, not) | Right-to-left |
+| 2 | `*`, `/` | Multiplicative | Left-to-right |
+| 3 | `+`, `-` | Additive | Left-to-right |
+| 4 | `<`, `>`, `<=`, `>=` | Relational | Left-to-right |
+| 5 | `==`, `!=` | Equality | Left-to-right |
+| 6 | `&&` | Logical AND | Left-to-right |
+| 7 (lowest) | `||` | Logical OR | Left-to-right |
 
 ### Precedence Examples
 
 ```c
-// Multiplication before addition
-int a = 2 + 3 * 4;        // 2 + 12 = 14
+int a = 2 + 3 * 4;
 
-// Comparison before logical AND
-bool b = 5 > 3 && 10 < 20;  // true && true = true
+bool b = 5 > 3 && 10 < 20;
 
-// Logical AND before logical OR
-bool c = true || false && false;  // true || false = true
+bool c = true || false && false;
+
+int d = -5 + 3;
+
+bool e = !true && false;
+
+int f = -2 * 3;
 ```
 
 ### Using Parentheses
@@ -292,18 +482,16 @@ bool c = true || false && false;  // true || false = true
 Parentheses `()` can override precedence:
 
 ```c
-int a = (2 + 3) * 4;      // 5 * 4 = 20
-bool b = 5 > (3 && 10);   // ERROR: Type mismatch
-bool c = (true || false) && false;  // true && false = false
+int a = (2 + 3) * 4;
+bool b = 5 > (3 && 10);
+bool c = (true || false) && false;
 ```
 
 **Best Practice**: Use parentheses for clarity even when not strictly required:
 
 ```c
-// Less clear
 bool result = a > 0 && b < 10 || c == 5;
 
-// More clear
 bool result = ((a > 0) && (b < 10)) || (c == 5);
 ```
 
@@ -312,10 +500,8 @@ bool result = ((a > 0) && (b < 10)) || (c == 5);
 ### Arithmetic Operators Type Rules
 
 ```c
-// ✓ OK: Both operands are int
 int x = 5 + 3;
 
-// ✗ ERROR: Cannot mix int and bool
 int y = 5 + true;
 int z = false * 10;
 ```
@@ -323,13 +509,10 @@ int z = false * 10;
 ### Comparison Operators Type Rules
 
 ```c
-// ✓ OK: Both operands are int
 bool a = 5 < 10;
 
-// ✓ OK: Both operands are bool
 bool b = true == false;
 
-// ✗ ERROR: Cannot compare different types
 bool c = 5 == true;
 bool d = 10 < false;
 ```
@@ -337,11 +520,9 @@ bool d = 10 < false;
 ### Logical Operators Type Rules
 
 ```c
-// ✓ OK: Both operands are bool
 bool a = true && false;
 bool b = (5 > 3) || (10 == 10);
 
-// ✗ ERROR: Operands must be bool
 bool c = 5 && 10;
 bool d = true && 42;
 ```
@@ -352,11 +533,11 @@ bool d = true && 42;
 
 ```c
 int calculate(int x, int y) {
-    int sum = x + y;              // Addition
-    int diff = x - y;             // Subtraction
-    int product = x * y;          // Multiplication
-    int quotient = x / y;         // Division
-    int result = sum * 2 + diff;  // Mixed arithmetic
+    int sum = x + y;
+    int diff = x - y;
+    int product = x * y;
+    int quotient = x / y;
+    int result = sum * 2 + diff;
     return result;
 }
 ```
@@ -365,7 +546,7 @@ int calculate(int x, int y) {
 
 ```c
 bool isInRange(int x, int low, int high) {
-    return (x >= low) && (x <= high);  // Comparison + Logical AND
+    return (x >= low) && (x <= high);
 }
 ```
 
@@ -384,14 +565,11 @@ int main() {
     int x = 10;
     int y = 5;
 
-    // Multiplication before addition
-    int a = x + y * 2;            // 10 + 10 = 20
+    int a = x + y * 2;
 
-    // Comparison before logical AND
-    bool b = x > 5 && y < 10;     // true && true = true
+    bool b = x > 5 && y < 10;
 
-    // Override with parentheses
-    int c = (x + y) * 2;          // 15 * 2 = 30
+    int c = (x + y) * 2;
 
     return a + c;
 }
@@ -402,13 +580,11 @@ int main() {
 ### Mixing Types
 
 ```c
-// ✗ ERROR: Cannot use int in logical expression
-if (x && y) {  // Wrong!
+if (x && y) {
     return 1;
 }
 
-// ✓ OK: Use comparison
-if ((x > 0) && (y > 0)) {  // Correct
+if ((x > 0) && (y > 0)) {
     return 1;
 }
 ```
@@ -416,16 +592,13 @@ if ((x > 0) && (y > 0)) {  // Correct
 ### Division by Zero
 
 ```c
-// ✗ COMPILE ERROR
 int x = 100 / 0;
 
-// ✗ RUNTIME ERROR
 int divide(int a, int b) {
     return a / b;
 }
 divide(100, 0);
 
-// ✓ OK: Check before dividing
 int safeDivide(int a, int b) {
     if (b == 0) {
         return 0;
@@ -437,19 +610,18 @@ int safeDivide(int a, int b) {
 ### Forgetting Parentheses
 
 ```c
-// Unclear precedence
 bool result = a > 0 && b < 10 || c == 5;
 
-// Clear with parentheses
 bool result = ((a > 0) && (b < 10)) || (c == 5);
 ```
 
 ## Operator Implementation
 
-Operators are implemented in the VM using stack-based instructions:
+Operators are implemented in the VM using type-specific stack-based instructions:
 
-- **Arithmetic**: `Add`, `Sub`, `Mul`, `Div`
-- **Comparison**: `Eq`, `Neq`, `Lt`, `Gt`, `Lte`, `Gte`
-- **Logical**: `And`, `Or`
+- **Arithmetic**: `AddInt`, `AddFloat`, `SubInt`, `SubFloat`, `MulInt`, `MulFloat`, `DivInt`, `DivFloat`
+- **Unary**: `NegInt`, `NegFloat`, `NotBool`
+- **Comparison**: `EqInt`, `EqFloat`, `NeqInt`, `NeqFloat`, `LtInt`, `LtFloat`, `GtInt`, `GtFloat`, `LeInt`, `LeFloat`, `GeInt`, `GeFloat`
+- **Logical**: `AndBool`, `OrBool`
 
 All operators pop their operands from the stack and push the result back onto the stack.

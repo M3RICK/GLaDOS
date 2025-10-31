@@ -4,7 +4,7 @@ This page details the GLaDOS type checking system, which ensures type safety and
 
 ## Overview
 
-The type checker is implemented in `src/Compiler.hs` and performs:
+The type checker is implemented in `src/Security/TypeChecker.hs` and performs:
 
 1. **Type inference**: Determine the type of every expression
 2. **Type compatibility**: Verify operations use correct types
@@ -52,8 +52,8 @@ type GlobalEnv = Map String (Type, [Type])
 -- Map from function name to (return type, parameter types)
 
 -- Example:
--- "add" -> (TInt, [TInt, TInt])
--- "isPositive" -> (TBool, [TInt])
+-- "add" -> (TypeInt, [TypeInt, TypeInt])
+-- "isPositive" -> (TypeBool, [TypeInt])
 ```
 
 ### Local Environment
@@ -68,8 +68,8 @@ data InitStatus
   | Uninitialized  -- Variable declared but not initialized
 
 -- Example:
--- "x" -> (TInt, Initialized)
--- "y" -> (TBool, Uninitialized)
+-- "x" -> (TypeInt, Initialized)
+-- "y" -> (TypeBool, Uninitialized)
 ```
 
 ## Expression Type Checking
@@ -82,8 +82,8 @@ Every expression has an inferred type:
 inferExprType :: GlobalEnv -> LocalEnv -> Expr -> Either String Type
 
 -- Literal
-inferExprType _ _ (Lit (IntLit _)) = Right TInt
-inferExprType _ _ (Lit (BoolLit _)) = Right TBool
+inferExprType _ _ (Lit (IntLit _)) = Right TypeInt
+inferExprType _ _ (Lit (BoolLit _)) = Right TypeBool
 
 -- Variable
 inferExprType _ env (Var name) =
@@ -114,23 +114,23 @@ Different operators have different type requirements:
 checkBinOp :: BinOp -> Type -> Type -> Either String Type
 
 -- Arithmetic operators: int × int → int
-checkBinOp Add TInt TInt = Right TInt
-checkBinOp Sub TInt TInt = Right TInt
-checkBinOp Mul TInt TInt = Right TInt
-checkBinOp Div TInt TInt = Right TInt
-checkBinOp op TInt TInt = Left $ "Type error: arithmetic operation requires int operands"
+checkBinOp Add TypeInt TypeInt = Right TypeInt
+checkBinOp Sub TypeInt TypeInt = Right TypeInt
+checkBinOp Mul TypeInt TypeInt = Right TypeInt
+checkBinOp Div TypeInt TypeInt = Right TypeInt
+checkBinOp op TypeInt TypeInt = Left $ "Type error: arithmetic operation requires int operands"
 
 -- Comparison operators: T × T → bool (same types)
-checkBinOp Eq t1 t2 | t1 == t2 = Right TBool
-checkBinOp Neq t1 t2 | t1 == t2 = Right TBool
-checkBinOp Lt TInt TInt = Right TBool
-checkBinOp Gt TInt TInt = Right TBool
-checkBinOp Lte TInt TInt = Right TBool
-checkBinOp Gte TInt TInt = Right TBool
+checkBinOp Eq t1 t2 | t1 == t2 = Right TypeBool
+checkBinOp Neq t1 t2 | t1 == t2 = Right TypeBool
+checkBinOp Lt TypeInt TypeInt = Right TypeBool
+checkBinOp Gt TypeInt TypeInt = Right TypeBool
+checkBinOp Le TypeInt TypeInt = Right TypeBool
+checkBinOp Ge TypeInt TypeInt = Right TypeBool
 
 -- Logical operators: bool × bool → bool
-checkBinOp And TBool TBool = Right TBool
-checkBinOp Or TBool TBool = Right TBool
+checkBinOp And TypeBool TypeBool = Right TypeBool
+checkBinOp Or TypeBool TypeBool = Right TypeBool
 
 -- Type mismatch
 checkBinOp op t1 t2 = Left $ "Type error: incompatible types " ++ show t1 ++ " and " ++ show t2
@@ -156,8 +156,8 @@ checkVarDecl globalEnv env declaredType varName (Just initExpr) = do
 
 **Example:**
 ```c
-int x;           // OK: x is TInt, Uninitialized
-int y = 42;      // OK: y is TInt, Initialized
+int x;           // OK: x is TypeInt, Uninitialized
+int y = 42;      // OK: y is TypeInt, Initialized
 int z = true;    // ERROR: expected int but got bool
 ```
 
@@ -188,7 +188,7 @@ checkIf :: GlobalEnv -> LocalEnv -> Type -> Expr -> [Statement] -> Maybe [Statem
 checkIf globalEnv env returnType condition thenBody elseBody = do
   -- Check condition is bool
   condType <- inferExprType globalEnv env condition
-  when (condType /= TBool) $
+  when (condType /= TypeBool) $
     Left $ "Type error: if condition must be bool, got " ++ show condType
 
   -- Check then branch
@@ -218,7 +218,7 @@ checkWhile :: GlobalEnv -> LocalEnv -> Type -> Expr -> [Statement] -> Either Str
 checkWhile globalEnv env returnType condition body = do
   -- Check condition is bool
   condType <- inferExprType globalEnv env condition
-  when (condType /= TBool) $
+  when (condType /= TypeBool) $
     Left $ "Type error: while condition must be bool, got " ++ show condType
 
   -- Check body
@@ -482,7 +482,7 @@ checkStatements globalEnv env returnType stmts =
 checkStatement :: GlobalEnv -> Type -> LocalEnv -> Statement -> Either String LocalEnv
 checkStatement globalEnv returnType env stmt =
   case stmt of
-    VarDecl ty name init ->
+    Decl ty name init ->
       checkVarDecl globalEnv env ty name init
 
     Assign name expr ->

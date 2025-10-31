@@ -373,12 +373,3 @@ int main() {
 ```
 
 Output: `0`
-
-## Tips for Writing GLaDOS Programs
-
-1. **Always initialize variables** before using them
-2. **Ensure all code paths return** in non-void functions
-3. **Use recursion** for naturally recursive problems
-4. **Use loops** when you need state mutation
-5. **Break complex logic** into smaller functions
-6. **Test edge cases** like 0, negative numbers, etc.

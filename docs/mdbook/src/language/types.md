@@ -4,7 +4,7 @@ GLaDOS features a **static, strong type system** that ensures type safety at com
 
 ## Primitive Types
 
-GLaDOS supports two primitive types:
+GLaDOS supports four primitive types:
 
 ### Integer Type (`int`)
 
@@ -24,7 +24,45 @@ int large = 1000000;
 **Operations:**
 - Arithmetic: `+`, `-`, `*`, `/`
 - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
-- No implicit conversion to/from bool
+- No implicit conversion to/from bool or float
+
+### Float Type (`float`)
+
+- **Size**: 64-bit double-precision floating-point
+- **Range**: Approximately ±1.7 × 10^308 (IEEE 754 double precision)
+- **Precision**: ~15-17 significant decimal digits
+- **Haskell Representation**: `Double`
+- **Literals**: Decimal floating-point literals (e.g., `3.14`, `-0.5`, `1.0`, `2.5e10`)
+
+**Examples:**
+```c
+float pi = 3.14159;
+float negative = -2.5;
+float small = 0.001;
+float scientific = 1.5e-10;
+```
+
+**Operations:**
+- Arithmetic: `+`, `-`, `*`, `/`
+- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
+- No implicit conversion to/from int or bool
+
+**Important Notes:**
+- Float literals must include a decimal point (e.g., `1.0`, not `1`)
+- Division by zero results in runtime error (like integers)
+- Floating-point arithmetic follows IEEE 754 standard
+- No automatic conversion between `int` and `float`
+
+**Type Safety with Floats:**
+```c
+float x = 3.14;
+float y = 2.0;
+float z = x + y;
+
+int a = 5;
+float b = a;
+float c = 3.14 + 5;
+```
 
 ### Boolean Type (`bool`)
 
@@ -36,13 +74,50 @@ int large = 1000000;
 ```c
 bool flag = true;
 bool isReady = false;
-bool result = 5 > 3;  // true
+bool result = 5 > 3;
 ```
 
 **Operations:**
 - Logical: `&&` (AND), `||` (OR)
 - Comparison: `==`, `!=`
-- No implicit conversion to/from int
+- No implicit conversion to/from int or float
+
+### Void Type (`void`)
+
+- **Purpose**: Indicates functions that do not return a value
+- **Usage**: Only valid as a function return type
+- **Haskell Representation**: `TypeVoid`
+
+**Examples:**
+```c
+void printMessage() {
+
+}
+
+void doSomething(int x) {
+    if (x > 0) {
+        return;
+    }
+}
+```
+
+**Restrictions:**
+```c
+void x;
+
+void result = someFunction();
+
+void helper(int a, int b) {
+
+}
+```
+
+**Important Notes:**
+- Void functions do not need explicit return statements
+- Can use `return;` (without value) for early exit
+- Cannot be used as variable type
+- Cannot be used as parameter type
+- Type checker does not require return path analysis for void functions
 
 ## Type Safety
 
@@ -51,11 +126,12 @@ bool result = 5 > 3;  // true
 All types are checked at **compile time** before the program runs. This catches type errors early:
 
 ```c
-// ✗ COMPILE ERROR: Type mismatch
 int x = true;
 
-// ✓ OK
+float y = 5;
+
 int x = 42;
+float y = 3.14;
 bool flag = true;
 ```
 
@@ -64,31 +140,35 @@ bool flag = true;
 GLaDOS does **not** allow implicit type conversions:
 
 ```c
-// ✗ COMPILE ERROR: Cannot mix types
 int x = 5 + true;
 
-// ✗ COMPILE ERROR: bool expected, got int
+float y = 3.14 + 5;
+
 if (5) {
     return 1;
 }
 
-// ✓ OK: Explicit comparison
+int z = 3.14;
+
 if (5 > 0) {
     return 1;
 }
+
+float a = 3.14;
+float b = a + 2.0;
 ```
 
 ### Type Inference
 
-Variable types must be **explicitly declared**. GLaDOS does not infer types:
+Variable types must be **explicitly declared** at the user level. GLaDOS does not provide user-facing type inference:
 
 ```c
-// ✗ ERROR: Type must be specified
 var x = 42;
 
-// ✓ OK: Type explicitly declared
 int x = 42;
 ```
+
+**Note:** While the compiler uses an internal `TypeInfer` type during type checking for intermediate expressions, this is not exposed to user code. All variable declarations must have explicit type annotations.
 
 ## Function Types
 
@@ -104,24 +184,28 @@ Functions have a type signature consisting of:
 
 **Examples:**
 ```c
-// Type: int -> int
 int square(int x) {
     return x * x;
 }
 
-// Type: (int, int) -> int
 int add(int a, int b) {
     return a + b;
 }
 
-// Type: (int, int) -> bool
+float multiply(float x, float y) {
+    return x * y;
+}
+
 bool isGreater(int a, int b) {
     return a > b;
 }
 
-// Type: () -> int (no parameters)
 int getFortyTwo() {
     return 42;
+}
+
+void printNumber(int x) {
+
 }
 ```
 
@@ -137,13 +221,10 @@ int add(int a, int b) {
 }
 
 int main() {
-    // ✗ ERROR: Expected 2 arguments, got 1
     int x = add(5);
 
-    // ✗ ERROR: Expected int, got bool
     int y = add(true, 5);
 
-    // ✓ OK
     int z = add(5, 3);
     return z;
 }
@@ -156,9 +237,12 @@ int main() {
 Variables must be declared with a type before use:
 
 ```c
-int x;        // Declaration
-x = 42;       // Assignment
-int y = 10;   // Declaration with initialization
+int x;
+x = 42;
+int y = 10;
+
+float pi = 3.14;
+bool flag = true;
 ```
 
 ### Variable Initialization
@@ -166,15 +250,12 @@ int y = 10;   // Declaration with initialization
 GLaDOS tracks whether variables are initialized before use:
 
 ```c
-// ✗ ERROR: Variable used before initialization
 int x;
 return x;
 
-// ✓ OK: Variable initialized
 int x = 42;
 return x;
 
-// ✓ OK: Variable assigned before use
 int y;
 y = 10;
 return y;
@@ -186,8 +267,8 @@ Assignments must match the variable's declared type:
 
 ```c
 int x = 5;
-x = 10;      // ✓ OK: int = int
-x = true;    // ✗ ERROR: int = bool
+x = 10;
+x = true;
 ```
 
 ### Expression Type Rules
@@ -196,15 +277,22 @@ Every expression has a type determined by its components:
 
 #### Arithmetic Expressions
 
-**Rule**: Both operands must be `int`, result is `int`
+**Rule**: Both operands must be the same numeric type (`int` or `float`), result is same type
 
 ```c
-int a = 5 + 3;      // ✓ int + int = int
-int b = 10 - 2;     // ✓ int - int = int
-int c = 4 * 5;      // ✓ int * int = int
-int d = 20 / 4;     // ✓ int / int = int
+int a = 5 + 3;
+int b = 10 - 2;
+int c = 4 * 5;
+int d = 20 / 4;
 
-int e = 5 + true;   // ✗ ERROR: int + bool
+float e = 3.14 + 2.86;
+float f = 10.5 - 3.2;
+float g = 2.5 * 4.0;
+float h = 9.0 / 3.0;
+
+int i = 5 + true;
+int j = 5 + 3.14;
+float k = 3.14 + 5;
 ```
 
 #### Comparison Expressions
@@ -212,12 +300,19 @@ int e = 5 + true;   // ✗ ERROR: int + bool
 **Rule**: Both operands must be same type, result is `bool`
 
 ```c
-bool a = 5 == 5;     // ✓ int == int = bool
-bool b = 5 != 3;     // ✓ int != int = bool
-bool c = 5 < 10;     // ✓ int < int = bool
-bool d = true == false;  // ✓ bool == bool = bool
+bool a = 5 == 5;
+bool b = 5 != 3;
+bool c = 5 < 10;
 
-bool e = 5 == true;  // ✗ ERROR: Cannot compare int and bool
+bool d = 3.14 == 3.14;
+bool e = 2.5 < 3.7;
+bool f = 1.0 >= 0.5;
+
+bool g = true == false;
+
+bool h = 5 == true;
+bool i = 3.14 == 5;
+bool j = 5 < 3.14;
 ```
 
 #### Logical Expressions
@@ -225,12 +320,12 @@ bool e = 5 == true;  // ✗ ERROR: Cannot compare int and bool
 **Rule**: Both operands must be `bool`, result is `bool`
 
 ```c
-bool a = true && false;        // ✓ bool && bool = bool
-bool b = true || false;        // ✓ bool || bool = bool
-bool c = (5 > 3) && (10 < 20); // ✓ bool && bool = bool
+bool a = true && false;
+bool b = true || false;
+bool c = (5 > 3) && (10 < 20);
 
-bool d = 5 && 10;              // ✗ ERROR: int && int
-bool e = true && 5;            // ✗ ERROR: bool && int
+bool d = 5 && 10;
+bool e = true && 5;
 ```
 
 ### Control Flow Type Rules
@@ -240,18 +335,15 @@ bool e = true && 5;            // ✗ ERROR: bool && int
 **Rule**: Condition must be type `bool`
 
 ```c
-// ✓ OK: Condition is bool
 if (5 > 3) {
     return 1;
 }
 
-// ✓ OK: Variable is bool
 bool flag = true;
 if (flag) {
     return 1;
 }
 
-// ✗ ERROR: Condition is int, not bool
 if (5) {
     return 1;
 }
@@ -262,12 +354,10 @@ if (5) {
 **Rule**: Condition must be type `bool`
 
 ```c
-// ✓ OK
 while (x > 0) {
     x = x - 1;
 }
 
-// ✗ ERROR: int where bool expected
 while (x) {
     x = x - 1;
 }
@@ -278,36 +368,46 @@ while (x) {
 **Rule**: Return expression type must match function return type
 
 ```c
-// ✓ OK: Returns int
 int getValue() {
     return 42;
 }
 
-// ✗ ERROR: Returns bool from int function
+float getPi() {
+    return 3.14159;
+}
+
+bool isReady() {
+    return true;
+}
+
+void doSomething() {
+
+}
+
 int getBad() {
     return true;
 }
 
-// ✓ OK: Returns bool
-bool isReady() {
-    return true;
+float getWrong() {
+    return 5;
+}
+
+void voidFunc() {
+    return 42;
 }
 ```
 
 ### All Paths Must Return
 
-**Rule**: Every code path must return a value of the correct type
+**Rule**: Every non-void function code path must return a value of the correct type
 
 ```c
-// ✗ ERROR: Missing return in else branch
 int bad(int x) {
     if (x > 0) {
         return 1;
     }
-    // No return here!
 }
 
-// ✓ OK: All paths return
 int good(int x) {
     if (x > 0) {
         return 1;
@@ -316,14 +416,21 @@ int good(int x) {
     }
 }
 
-// ✓ OK: Return after if
 int alsoGood(int x) {
     if (x > 0) {
         return 1;
     }
     return 0;
 }
+
+void printValue(int x) {
+    if (x > 0) {
+        return;
+    }
+}
 ```
+
+**Note:** The return path analysis only applies to non-void functions. Void functions are not required to have return statements on all paths.
 
 ## Type Error Messages
 
@@ -331,10 +438,14 @@ The type checker provides detailed error messages:
 
 ```
 Type error at line 5: expected int but got bool
+Type error at line 8: expected float but got int
 Return type mismatch at line 10: expected int but got bool
+Return type mismatch at line 15: expected void but got int
 Type error in arithmetic at line 7: expected int but got bool
+Type error in arithmetic at line 12: cannot mix int and float
 Function 'add' expects 2 arguments but got 1 at line 15
 Type mismatch in function argument at line 12: expected int but got bool
+Type mismatch in function argument at line 18: expected float but got int
 ```
 
 Each message includes:
@@ -350,10 +461,18 @@ Types are represented in Haskell as:
 
 ```haskell
 data Type
-  = TInt      -- Integer type
-  | TBool     -- Boolean type
-  deriving (Eq, Show)
+  = TypeInt
+  | TypeFloat
+  | TypeBool
+  | TypeVoid
+  | TypeInfer
+  deriving (Show, Eq)
 ```
+
+**Notes:**
+- `TypeInfer` is used internally by the compiler during type checking for intermediate expressions
+- User code cannot explicitly use the `TypeInfer` type
+- All variable declarations require explicit type annotations
 
 ### Type Checking Algorithm
 
@@ -375,13 +494,30 @@ The type checker maintains:
 
 ## Limitations and Design Choices
 
-### No Type Inference
+### No User-Level Type Inference
 
 Variables must have explicit type declarations. This is by design for simplicity and clarity.
 
+**Note:** The compiler internally uses a `TypeInfer` type during type checking for intermediate expressions, but this is not exposed to user code. All variable and parameter declarations require explicit type annotations.
+
 ### No Implicit Conversions
 
-No automatic conversions between types (e.g., int to bool or vice versa). This prevents common bugs.
+No automatic conversions between types (e.g., int to bool, int to float, or vice versa). This prevents common bugs.
+
+**Examples of rejected implicit conversions:**
+```c
+int x = 5;
+float y = x;
+
+float a = 3.14;
+int b = a;
+
+bool flag = 1;
+
+int count = true;
+```
+
+All type conversions must be explicit (note: GLaDOS currently does not provide explicit conversion functions, so values must be literals of the correct type).
 
 ### No User-Defined Types
 
@@ -393,9 +529,28 @@ GLaDOS does not support:
 
 This keeps the language simple and focused.
 
-### No Void Functions
+### Void Return Type
 
-All functions must return a value. There is no `void` return type.
+Functions can have `void` return type when they don't return a value:
+
+```c
+void helper(int x) {
+
+}
+
+void earlyExit(bool condition) {
+    if (condition) {
+        return;
+    }
+}
+```
+
+**Important:**
+- Void can only be used as a function return type
+- Void functions don't need explicit return statements
+- Can use `return;` (without expression) for early exit
+- Cannot declare void variables or parameters
+- Type checker doesn't enforce return path analysis for void functions
 
 ### No Null or Optional Types
 

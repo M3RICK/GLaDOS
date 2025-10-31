@@ -1,256 +1,363 @@
 # IR Generation
 
-> **WARNING**: This page is still being completed. Some of the information is false and filled with temporary dummy information. The actual IR syntax has changed significantly from what is documented here, as a custom WebAssembly-like format was created for this project.
-
-This page details how GLaDOS translates the type-checked AST into Intermediate Representation (IR), a stack-based bytecode suitable for VM execution.
+This page details how GLaDOS translates the type-checked AST into Intermediate Representation (IR), a WebAssembly-like stack-based bytecode suitable for VM execution.
 
 ## Overview
 
-IR generation is implemented in `src/Compiler.hs` and produces instructions defined in `src/IR.hs`. The IR is a **stack-based bytecode** that the GLaDOS virtual machine executes.
+IR generation is implemented in `src/Compiler/` modules and produces instructions defined in `src/IR/Types.hs`. The IR uses:
+
+- **Stack-based execution**: All operations work with an operand stack
+- **Indexed locals**: Variables accessed by integer index, not name
+- **Type-specific instructions**: Separate operations for int, float, and bool
+- **Offset-based control flow**: Jumps use relative instruction offsets
+- **Function indexing**: Functions called by index into function table
+
+## IR Program Structure
+
+An IR program consists of multiple compiled functions:
+
+```haskell
+data IRProgram = IRProgram
+  { functions :: [CompiledFunction]
+  , mainIndex :: Int
+  }
+```
+
+Each function is compiled separately:
+
+```haskell
+data CompiledFunction = CompiledFunction
+  { funcName :: String
+  , paramCount :: Int
+  , localVarCount :: Int
+  , code :: [Instruction]
+  }
+```
+
+**Local Variable Indexing:**
+
+Locals are numbered starting from 0:
+- Parameters occupy indices `0` to `paramCount - 1`
+- Local variables occupy indices `paramCount` to `localVarCount - 1`
+
+Example:
+```c
+int add(int a, int b) {
+    int result = a + b;
+    return result;
+}
+```
+
+Local indices:
+- `a` = local 0 (parameter)
+- `b` = local 1 (parameter)
+- `result` = local 2 (local variable)
 
 ## IR Instruction Set
 
+Complete instruction set from `src/IR/Types.hs`:
+
 ### Stack Operations
 
-**`Push <value>`**
-- Pushes a literal value onto the stack
-- Example: `Push 42` pushes integer 42
+**`PushInt Int`**
+- Pushes an integer literal onto the stack
+- Example: `PushInt 42`
+
+**`PushBool Bool`**
+- Pushes a boolean literal onto the stack
+- Example: `PushBool True`
+
+**`PushFloat Double`**
+- Pushes a float literal onto the stack
+- Example: `PushFloat 3.14`
 
 **`Pop`**
-- Pops the top value from the stack
-- Used to discard unused results
+- Pops and discards the top value from the stack
+- Used for expression statements
 
-**`PopN <count>`**
-- Pops N values from the stack
-- Used for cleaning up function parameters
+### Local Variable Operations
 
-### Variable Operations
+**`GetLocal Int`**
+- Pushes the value of local variable at given index onto the stack
+- Example: `GetLocal 0` loads first parameter/local
 
-**`Load <variable>`**
-- Loads a variable's value onto the stack
-- Example: `Load "x"` pushes value of x
+**`SetLocal Int`**
+- Pops a value from stack and stores it in local variable at given index
+- Example: `SetLocal 2` stores to third local
 
-**`Store <variable>`**
-- Pops a value from stack and stores it in a variable
-- Example: `Store "x"` sets x to top stack value
+### Integer Arithmetic
 
-### Arithmetic Operations
+**`AddInt`**
+- Pops `b`, pops `a`, pushes `a + b` (integers)
 
-All arithmetic instructions pop two operands from the stack and push the result:
+**`SubInt`**
+- Pops `b`, pops `a`, pushes `a - b` (integers)
 
-**`Add`**
-- Pops b, pops a, pushes (a + b)
+**`MulInt`**
+- Pops `b`, pops `a`, pushes `a * b` (integers)
 
-**`Sub`**
-- Pops b, pops a, pushes (a - b)
+**`DivInt`**
+- Pops `b`, pops `a`, pushes `a / b` (integers)
+- Runtime error if `b` is 0
 
-**`Mul`**
-- Pops b, pops a, pushes (a * b)
+### Float Arithmetic
 
-**`Div`**
-- Pops b, pops a, pushes (a / b)
-- Runtime error if b is 0
+**`AddFloat`**
+- Pops `b`, pops `a`, pushes `a + b` (floats)
 
-### Comparison Operations
+**`SubFloat`**
+- Pops `b`, pops `a`, pushes `a - b` (floats)
 
-All comparison instructions pop two operands and push a boolean result:
+**`MulFloat`**
+- Pops `b`, pops `a`, pushes `a * b` (floats)
 
-**`Eq`**
-- Equal: pushes (a == b)
+**`DivFloat`**
+- Pops `b`, pops `a`, pushes `a / b` (floats)
+- Runtime error if `b` is 0.0
 
-**`Neq`**
-- Not equal: pushes (a != b)
+### Unary Operations
 
-**`Lt`**
-- Less than: pushes (a < b)
+**`NegInt`**
+- Pops integer `a`, pushes `-a`
 
-**`Gt`**
-- Greater than: pushes (a > b)
+**`NegFloat`**
+- Pops float `a`, pushes `-a`
 
-**`Lte`**
-- Less than or equal: pushes (a <= b)
+**`NotBool`**
+- Pops boolean `a`, pushes `!a`
 
-**`Gte`**
-- Greater than or equal: pushes (a >= b)
+### Integer Comparison
+
+**`EqInt`**
+- Pops `b`, pops `a`, pushes boolean `a == b`
+
+**`NeqInt`**
+- Pops `b`, pops `a`, pushes boolean `a != b`
+
+**`LtInt`**
+- Pops `b`, pops `a`, pushes boolean `a < b`
+
+**`GtInt`**
+- Pops `b`, pops `a`, pushes boolean `a > b`
+
+**`LeInt`**
+- Pops `b`, pops `a`, pushes boolean `a <= b`
+
+**`GeInt`**
+- Pops `b`, pops `a`, pushes boolean `a >= b`
+
+### Float Comparison
+
+**`EqFloat`**
+- Pops `b`, pops `a`, pushes boolean `a == b`
+
+**`NeqFloat`**
+- Pops `b`, pops `a`, pushes boolean `a != b`
+
+**`LtFloat`**
+- Pops `b`, pops `a`, pushes boolean `a < b`
+
+**`GtFloat`**
+- Pops `b`, pops `a`, pushes boolean `a > b`
+
+**`LeFloat`**
+- Pops `b`, pops `a`, pushes boolean `a <= b`
+
+**`GeFloat`**
+- Pops `b`, pops `a`, pushes boolean `a >= b`
 
 ### Logical Operations
 
-**`And`**
-- Pops b, pops a, pushes (a && b)
-- Short-circuit: if a is false, b is not evaluated
+**`AndBool`**
+- Pops `b`, pops `a`, pushes boolean `a && b`
+- Note: Both operands are always evaluated (not short-circuit in IR)
 
-**`Or`**
-- Pops b, pops a, pushes (a || b)
-- Short-circuit: if a is true, b is not evaluated
+**`OrBool`**
+- Pops `b`, pops `a`, pushes boolean `a || b`
+- Note: Both operands are always evaluated (not short-circuit in IR)
 
-### Control Flow Operations
+### Control Flow
 
-**`Label <name>`**
-- Marks a jump target
-- Does not affect stack or execution
+**`Jump Int`**
+- Unconditional jump by relative offset
+- Example: `Jump 5` jumps forward 5 instructions
+- Example: `Jump -3` jumps backward 3 instructions
 
-**`Jump <label>`**
-- Unconditional jump to label
-- Changes program counter
+**`JumpIfFalse Int`**
+- Pops top of stack (must be boolean)
+- If false, jumps by relative offset
+- If true, continues to next instruction
 
-**`JumpIfFalse <label>`**
-- Pops top of stack
-- Jumps to label if value is false
-- Otherwise continues to next instruction
-
-### Function Operations
-
-**`Call <function> <arity>`**
-- Calls a function with given number of arguments
-- Arguments are on the stack (topmost is last argument)
-- Pushes return value onto stack
+**`Call Int`**
+- Calls function at given index in function table
+- Function pops its parameters from stack
+- Function pushes return value onto stack
 
 **`Return`**
 - Returns from current function
-- Top of stack is the return value
-- Pops call frame
+- Top of stack is return value (for non-void functions)
+- Void functions have no value on stack
 
-## IR Data Types
+**`Halt`**
+- Ends program execution
+- Used after main function returns
 
-### Instruction Type
+## Type-Specific Compilation
 
-```haskell
-data Instruction
-  = Push Value                -- Push literal value
-  | Pop                       -- Pop and discard
-  | PopN Int                  -- Pop N values
-  | Load String               -- Load variable
-  | Store String              -- Store to variable
-  | Add | Sub | Mul | Div     -- Arithmetic
-  | Eq | Neq | Lt | Gt | Lte | Gte  -- Comparison
-  | And | Or                  -- Logical
-  | Jump String               -- Unconditional jump
-  | JumpIfFalse String        -- Conditional jump
-  | Call String Int           -- Function call
-  | Return                    -- Return from function
-  | Label String              -- Jump target
-  deriving (Show, Eq)
+The compiler selects instructions based on operand types:
+
+### Integer Expression
+```c
+int x = 5 + 3;
 ```
 
-### Value Type
+Compiles to:
+```
+PushInt 5
+PushInt 3
+AddInt
+SetLocal 0
+```
 
-```haskell
-data Value
-  = IntVal Int64              -- Integer value
-  | BoolVal Bool              -- Boolean value
-  deriving (Show, Eq)
+### Float Expression
+```c
+float y = 2.5 * 4.0;
+```
+
+Compiles to:
+```
+PushFloat 2.5
+PushFloat 4.0
+MulFloat
+SetLocal 0
+```
+
+### Boolean Expression
+```c
+bool flag = x > 10;
+```
+
+Compiles to:
+```
+GetLocal 0
+PushInt 10
+GtInt
+SetLocal 1
 ```
 
 ## AST to IR Translation
 
 ### Expression Translation
 
-```haskell
-compileExpr :: Expr -> [Instruction]
-
--- Literal: push value
-compileExpr (Lit (IntLit n)) = [Push (IntVal n)]
-compileExpr (Lit (BoolLit b)) = [Push (BoolVal b)]
-
--- Variable: load value
-compileExpr (Var name) = [Load name]
-
--- Binary operation: compile operands then apply operator
-compileExpr (BinOp op left right) =
-  compileExpr left ++
-  compileExpr right ++
-  [compileBinOp op]
-
--- Function call: compile arguments then call
-compileExpr (Call fname args) =
-  concatMap compileExpr args ++
-  [Call fname (length args)]
-
-compileBinOp :: BinOp -> Instruction
-compileBinOp Add = Add
-compileBinOp Sub = Sub
-compileBinOp Mul = Mul
-compileBinOp Div = Div
-compileBinOp Eq = Eq
-compileBinOp Neq = Neq
-compileBinOp Lt = Lt
-compileBinOp Gt = Gt
-compileBinOp Lte = Lte
-compileBinOp Gte = Gte
-compileBinOp And = And
-compileBinOp Or = Or
-```
-
-**Example:**
+**Integer Literal:**
 ```c
-int x = 5 + 3 * 2;
+42
+```
+→ `PushInt 42`
+
+**Float Literal:**
+```c
+3.14
+```
+→ `PushFloat 3.14`
+
+**Boolean Literal:**
+```c
+true
+```
+→ `PushBool True`
+
+**Variable Reference:**
+```c
+x
+```
+→ `GetLocal <index>`
+
+**Binary Operation:**
+```c
+a + b
+```
+→
+```
+GetLocal <a_index>
+GetLocal <b_index>
+AddInt
 ```
 
-**IR:**
+**Unary Operation:**
+```c
+-x
 ```
-Push 5
-Push 3
-Push 2
-Mul         # Stack: [5, 6]
-Add         # Stack: [11]
-Store "x"
+→
+```
+GetLocal <x_index>
+NegInt
+```
+
+**Function Call:**
+```c
+add(5, 3)
+```
+→
+```
+PushInt 5
+PushInt 3
+Call <add_func_index>
 ```
 
 ### Statement Translation
 
-```haskell
-compileStatement :: Statement -> [Instruction]
+**Variable Declaration:**
+```c
+int x = 10;
+```
+→
+```
+PushInt 10
+SetLocal 0
+```
 
--- Variable declaration with initialization
-compileStatement (VarDecl _ name (Just expr)) =
-  compileExpr expr ++
-  [Store name]
+**Assignment:**
+```c
+x = 20;
+```
+→
+```
+PushInt 20
+SetLocal 0
+```
 
--- Variable declaration without initialization
-compileStatement (VarDecl _ name Nothing) =
-  []  -- No IR needed, variable will be in environment
+**Return Statement:**
+```c
+return x + 1;
+```
+→
+```
+GetLocal 0
+PushInt 1
+AddInt
+Return
+```
 
--- Assignment
-compileStatement (Assign name expr) =
-  compileExpr expr ++
-  [Store name]
-
--- Return statement
-compileStatement (Return expr) =
-  compileExpr expr ++
-  [Return]
-
--- Expression statement (result discarded)
-compileStatement (ExprStmt expr) =
-  compileExpr expr ++
-  [Pop]
+**Expression Statement:**
+```c
+factorial(5);
+```
+→
+```
+PushInt 5
+Call <factorial_index>
+Pop
 ```
 
 ### Control Flow Translation
 
 #### If Statement
 
-```haskell
-compileStatement (If cond thenBody elseBody) =
-  let thenLabel = genLabel "then"
-      elseLabel = genLabel "else"
-      endLabel = genLabel "endif"
-  in
-    compileExpr cond ++
-    [JumpIfFalse elseLabel] ++
-    -- Then branch
-    concatMap compileStatement thenBody ++
-    [Jump endLabel] ++
-    [Label elseLabel] ++
-    -- Else branch
-    maybe [] (concatMap compileStatement) elseBody ++
-    [Label endLabel]
-```
-
-**Example:**
+**Source:**
 ```c
 if (x > 0) {
-    return 1;
+    return x;
 } else {
     return 0;
 }
@@ -258,117 +365,243 @@ if (x > 0) {
 
 **IR:**
 ```
-Load "x"
-Push 0
-Gt
-JumpIfFalse else_1
-  Push 1
-  Return
-Jump endif_1
-Label else_1
-  Push 0
-  Return
-Label endif_1
+GetLocal 0
+PushInt 0
+GtInt
+JumpIfFalse 3
+GetLocal 0
+Return
+Jump 2
+PushInt 0
+Return
 ```
+
+**Explanation:**
+1. Evaluate condition `x > 0`
+2. `JumpIfFalse 3`: if false, jump forward 3 instructions (skip then branch)
+3. Then branch: get x and return
+4. `Jump 2`: skip else branch
+5. Else branch: push 0 and return
 
 #### While Loop
 
-```haskell
-compileStatement (While cond body) =
-  let startLabel = genLabel "while_start"
-      endLabel = genLabel "while_end"
-  in
-    [Label startLabel] ++
-    compileExpr cond ++
-    [JumpIfFalse endLabel] ++
-    concatMap compileStatement body ++
-    [Jump startLabel] ++
-    [Label endLabel]
-```
-
-**Example:**
+**Source:**
 ```c
-while (x > 0) {
-    x = x - 1;
+int i = 0;
+while (i < 10) {
+    i = i + 1;
 }
 ```
 
 **IR:**
 ```
-Label while_start_1
-  Load "x"
-  Push 0
-  Gt
-  JumpIfFalse while_end_1
-  Load "x"
-  Push 1
-  Sub
-  Store "x"
-  Jump while_start_1
-Label while_end_1
+PushInt 0
+SetLocal 0
+GetLocal 0
+PushInt 10
+LtInt
+JumpIfFalse 6
+GetLocal 0
+PushInt 1
+AddInt
+SetLocal 0
+Jump -9
 ```
 
-### Function Translation
+**Explanation:**
+1. Initialize `i = 0`
+2. Loop condition: `i < 10`
+3. `JumpIfFalse 6`: exit loop if condition false
+4. Loop body: `i = i + 1`
+5. `Jump -9`: jump back to condition
 
+#### For Loop
+
+**Source:**
+```c
+for (int i = 0; i < 10; i = i + 1) {
+    sum = sum + i;
+}
+```
+
+**IR:**
+```
+PushInt 0
+SetLocal 1
+GetLocal 1
+PushInt 10
+LtInt
+JumpIfFalse 10
+GetLocal 0
+GetLocal 1
+AddInt
+SetLocal 0
+GetLocal 1
+PushInt 1
+AddInt
+SetLocal 1
+Jump -13
+```
+
+## Function Translation
+
+### Simple Function
+
+**Source:**
+```c
+int double(int x) {
+    return x * 2;
+}
+```
+
+**CompiledFunction:**
 ```haskell
-compileFunction :: FuncDef -> [Instruction]
-compileFunction func =
-  [Label (funcName func)] ++
-  concatMap compileStatement (funcBody func)
+CompiledFunction {
+  funcName = "double",
+  paramCount = 1,
+  localVarCount = 1,
+  code = [
+    GetLocal 0,
+    PushInt 2,
+    MulInt,
+    Return
+  ]
+}
 ```
 
-**Example:**
+### Function with Locals
+
+**Source:**
 ```c
 int add(int a, int b) {
-    return a + b;
+    int result = a + b;
+    return result;
 }
 ```
 
-**IR:**
-```
-Label "add"
-  Load "a"
-  Load "b"
-  Add
-  Return
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "add",
+  paramCount = 2,
+  localVarCount = 3,
+  code = [
+    GetLocal 0,
+    GetLocal 1,
+    AddInt,
+    SetLocal 2,
+    GetLocal 2,
+    Return
+  ]
+}
 ```
 
-### Program Translation
+**Local indices:**
+- Local 0: parameter `a`
+- Local 1: parameter `b`
+- Local 2: local variable `result`
+
+### Void Function
+
+**Source:**
+```c
+void printValue(int x) {
+    if (x > 0) {
+        return;
+    }
+}
+```
+
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "printValue",
+  paramCount = 1,
+  localVarCount = 1,
+  code = [
+    GetLocal 0,
+    PushInt 0,
+    GtInt,
+    JumpIfFalse 1,
+    Return,
+    Return
+  ]
+}
+```
+
+## Program Translation
+
+### Function Table
+
+Functions are indexed for calling:
+
+```c
+int helper(int x) {
+    return x * 2;
+}
+
+int main() {
+    return helper(21);
+}
+```
+
+**Function Table:**
+- Index 0: `helper`
+- Index 1: `main`
+
+**main function IR:**
+```
+PushInt 21
+Call 0
+Return
+```
+
+### Main Index
+
+The `IRProgram` stores the index of the main function:
 
 ```haskell
-compileProgram :: Program -> [Instruction]
-compileProgram (Program funcs) =
-  -- Compile all functions
-  concatMap compileFunction funcs ++
-  -- Entry point: call main
-  [Call "main" 0, Return]
+IRProgram {
+  functions = [helperCompiled, mainCompiled],
+  mainIndex = 1
+}
 ```
 
-## Label Generation
+## Offset Calculation
 
-Labels must be unique to avoid conflicts:
+Jump offsets are calculated relative to the current instruction.
 
-```haskell
-type LabelCounter = Int
+### Forward Jump
 
-genLabel :: String -> LabelCounter -> (String, LabelCounter)
-genLabel prefix counter =
-  (prefix ++ "_" ++ show counter, counter + 1)
-
--- Usage:
--- "if_1", "if_2", "while_start_1", "while_end_1", etc.
+**Code:**
+```
+0: GetLocal 0
+1: JumpIfFalse 3
+2: PushInt 1
+3: Return
+4: PushInt 0
+5: Return
 ```
 
-## IR Optimization (Future Work)
+At instruction 1, `JumpIfFalse 3` jumps to instruction 4 (1 + 3).
 
-Potential optimizations:
+### Backward Jump
 
-1. **Constant Folding**: Evaluate constant expressions at compile time
-2. **Dead Code Elimination**: Remove unreachable code after Return
-3. **Peephole Optimization**: Replace instruction sequences with more efficient ones
-4. **Register Allocation**: Convert to register-based IR for better performance
+**Code:**
+```
+0: GetLocal 0
+1: PushInt 10
+2: LtInt
+3: JumpIfFalse 4
+4: GetLocal 0
+5: PushInt 1
+6: AddInt
+7: SetLocal 0
+8: Jump -8
+9: ...
+```
 
-Currently, GLaDOS does **no optimization** - it generates naive, straightforward code.
+At instruction 8, `Jump -8` jumps to instruction 0 (8 - 8).
 
 ## Complete Examples
 
@@ -384,25 +617,45 @@ int factorial(int n) {
 }
 ```
 
-**IR:**
-```
-Label "factorial"
-  Load "n"
-  Push 1
-  Lte
-  JumpIfFalse else_1
-    Push 1
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "factorial",
+  paramCount = 1,
+  localVarCount = 1,
+  code = [
+    GetLocal 0,
+    PushInt 1,
+    LeInt,
+    JumpIfFalse 2,
+    PushInt 1,
+    Return,
+    GetLocal 0,
+    GetLocal 0,
+    PushInt 1,
+    SubInt,
+    Call 0,
+    MulInt,
     Return
-  Jump endif_1
-Label else_1
-Label endif_1
-  Load "n"
-  Load "n"
-  Push 1
-  Sub
-  Call "factorial" 1
-  Mul
-  Return
+  ]
+}
+```
+
+**Execution trace for `factorial(3)`:**
+```
+Stack: []
+GetLocal 0          → Stack: [3]
+PushInt 1           → Stack: [3, 1]
+LeInt               → Stack: [False]
+JumpIfFalse 2       → Stack: [], PC = 6
+GetLocal 0          → Stack: [3]
+GetLocal 0          → Stack: [3, 3]
+PushInt 1           → Stack: [3, 3, 1]
+SubInt              → Stack: [3, 2]
+Call 0              → Stack: [3, 2] (recursive call)
+...eventually returns with Stack: [3, 2]
+MulInt              → Stack: [6]
+Return              → Returns 6
 ```
 
 ### Example 2: Sum Loop (Iterative)
@@ -411,8 +664,8 @@ Label endif_1
 ```c
 int sum(int n) {
     int total = 0;
-    int i = 1;
-    while (i <= n) {
+    int i = 0;
+    while (i < n) {
         total = total + i;
         i = i + 1;
     }
@@ -420,33 +673,73 @@ int sum(int n) {
 }
 ```
 
-**IR:**
-```
-Label "sum"
-  Push 0
-  Store "total"
-  Push 1
-  Store "i"
-Label while_start_1
-  Load "i"
-  Load "n"
-  Lte
-  JumpIfFalse while_end_1
-    Load "total"
-    Load "i"
-    Add
-    Store "total"
-    Load "i"
-    Push 1
-    Add
-    Store "i"
-    Jump while_start_1
-Label while_end_1
-  Load "total"
-  Return
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "sum",
+  paramCount = 1,
+  localVarCount = 3,
+  code = [
+    PushInt 0,
+    SetLocal 1,
+    PushInt 0,
+    SetLocal 2,
+    GetLocal 2,
+    GetLocal 0,
+    LtInt,
+    JumpIfFalse 10,
+    GetLocal 1,
+    GetLocal 2,
+    AddInt,
+    SetLocal 1,
+    GetLocal 2,
+    PushInt 1,
+    AddInt,
+    SetLocal 2,
+    Jump -12,
+    GetLocal 1,
+    Return
+  ]
+}
 ```
 
-### Example 3: Boolean Logic
+**Local indices:**
+- Local 0: parameter `n`
+- Local 1: local variable `total`
+- Local 2: local variable `i`
+
+### Example 3: Float Arithmetic
+
+**Source:**
+```c
+float circleArea(float radius) {
+    float pi = 3.14159;
+    return pi * radius * radius;
+}
+```
+
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "circleArea",
+  paramCount = 1,
+  localVarCount = 2,
+  code = [
+    PushFloat 3.14159,
+    SetLocal 1,
+    GetLocal 1,
+    GetLocal 0,
+    MulFloat,
+    GetLocal 0,
+    MulFloat,
+    Return
+  ]
+}
+```
+
+**Note:** All float operations use type-specific instructions.
+
+### Example 4: Boolean Logic
 
 **Source:**
 ```c
@@ -455,109 +748,120 @@ bool isInRange(int x, int low, int high) {
 }
 ```
 
-**IR:**
+**CompiledFunction:**
+```haskell
+CompiledFunction {
+  funcName = "isInRange",
+  paramCount = 3,
+  localVarCount = 3,
+  code = [
+    GetLocal 0,
+    GetLocal 1,
+    GeInt,
+    GetLocal 0,
+    GetLocal 2,
+    LeInt,
+    AndBool,
+    Return
+  ]
+}
 ```
-Label "isInRange"
-  Load "x"
-  Load "low"
-  Gte
-  Load "x"
-  Load "high"
-  Lte
-  And
-  Return
+
+## Compilation Environment
+
+### Variable Table
+
+The compiler maintains a `VarTable` mapping variable names to local indices:
+
+```haskell
+type VarTable = Map String Int
+```
+
+**Example for function `add(int a, int b)`:**
+```haskell
+varTable = Map.fromList [("a", 0), ("b", 1), ("result", 2)]
+```
+
+### Function Table
+
+The compiler maintains a `FuncTable` mapping function names to indices:
+
+```haskell
+type FuncTable = Map String Int
+```
+
+**Example:**
+```haskell
+funcTable = Map.fromList [("factorial", 0), ("main", 1), ("helper", 2)]
 ```
 
 ## IR Properties
 
 ### Stack-Based Architecture
 
-- **No registers**: All operations use the stack
-- **Simple**: Easy to generate and execute
-- **Compact**: Minimal instruction encoding
-- **Portable**: Platform-independent
+- All operations consume operands from stack and push results
+- No register allocation needed
+- Simple to generate, simple to interpret
 
-### Type Erasure
+### Type-Specific Operations
 
-IR does **not** include type information:
-- All values are either `IntVal` or `BoolVal`
-- Type checking is complete before IR generation
-- VM trusts the IR is well-typed
+- Type information encoded in instructions (AddInt vs AddFloat)
+- No runtime type checking needed
+- VM execution is fast and predictable
 
-### Control Flow
+### Indexed Locals
 
-- **Structured**: Uses labels and jumps
-- **No goto**: Only conditional and unconditional jumps
-- **Function calls**: Explicit `Call` and `Return`
+- Variables accessed by integer index
+- No runtime name lookup
+- Fast and efficient
 
-## IR Verification
+### Offset-Based Control Flow
 
-Although not currently implemented, IR can be verified for:
+- No label resolution needed
+- Direct jumps with known offsets
+- Compact representation
 
-1. **Label validity**: All jump targets exist
-2. **Stack balance**: Stack depth is consistent
-3. **Type safety**: Operations receive correct value types
-4. **Return coverage**: All functions return
+## Name Resolution
+
+During compilation, all names are resolved to indices:
+
+1. **Function names** → Function table index
+2. **Variable names** → Local variable index
+3. **Jump labels** → Relative instruction offset
+
+This happens during IR generation, so the VM never sees string names.
 
 ## Performance Characteristics
 
 ### Code Size
 
-- **Linear**: O(n) where n is AST size
-- **Minimal overhead**: Simple 1:1 or 1:few AST-to-IR mapping
-- **No optimization**: Code size could be reduced with optimizations
+- Compact representation
+- Instructions are small (most are 1-2 bytes when serialized)
+- Local indices fit in single bytes for most functions
 
 ### Generation Time
 
-- **Linear**: O(n) traversal of AST
-- **Fast**: No complex analysis required
-- **Single-pass**: Generate IR in one traversal
+- Single-pass compilation after type checking
+- Linear time in AST size
+- No complex optimizations (yet)
 
 ## IR as Compilation Target
 
-The IR serves as:
+The IR design is inspired by WebAssembly:
 
-1. **Abstraction layer**: Decouples front-end from VM
-2. **Optimization target**: Future optimizations operate on IR
-3. **Portable format**: Could target multiple back-ends
-4. **Debug format**: Can be pretty-printed for debugging
+- Indexed locals (like WebAssembly)
+- Type-specific instructions (like WebAssembly)
+- Stack-based execution (like WebAssembly)
+- Function indexing (like WebAssembly)
 
-## Testing IR Generation
-
-### Example Tests
-
-```haskell
--- Test: Simple expression
-testSimpleExpr :: Spec
-testSimpleExpr = it "compiles 5 + 3" $ do
-  let ast = BinOp Add (Lit (IntLit 5)) (Lit (IntLit 3))
-  compileExpr ast `shouldBe` [Push (IntVal 5), Push (IntVal 3), Add]
-
--- Test: Variable operations
-testVariable :: Spec
-testVariable = it "compiles assignment" $ do
-  let ast = Assign "x" (Lit (IntLit 42))
-  compileStatement ast `shouldBe` [Push (IntVal 42), Store "x"]
-
--- Test: Control flow
-testIf :: Spec
-testIf = it "compiles if statement" $ do
-  let ast = If (Lit (BoolLit True)) [Return (Lit (IntLit 1))] Nothing
-  length (compileStatement ast) `shouldBe` 5  -- cond + jump + body + label
-```
-
-### Running Tests
-
-```bash
-stack test --test-arguments="--match Compiler"
-```
+This makes it:
+- Simple to generate
+- Simple to interpret
+- Simple to serialize
+- Fast to execute
 
 ## Next Steps
 
-After IR generation, the bytecode is executed by:
-
-- [VM Execution](./vm-execution.md): Stack machine executing IR instructions
-
-See also:
-- [Compilation Overview](./overview.md): High-level compilation pipeline
-- [Type Checking](./type-checking.md): Type safety before IR generation
+After IR generation:
+1. IR is passed to bytecode serializer (see Bytecode Generation)
+2. Bytecode is executed by VM (see VM Execution)

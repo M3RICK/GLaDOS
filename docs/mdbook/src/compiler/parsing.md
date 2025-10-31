@@ -4,7 +4,7 @@ This page details the GLaDOS parser implementation, which transforms source code
 
 ## Overview
 
-The parser is implemented in `src/Parser.hs` and consists of two main phases:
+The parser is implemented in the `src/Parser/` module and consists of two main phases:
 
 1. **Lexical Analysis (Lexing)**: Convert source code into tokens
 2. **Syntactic Analysis (Parsing)**: Build AST from tokens
@@ -144,22 +144,24 @@ operatorTable =
   [ [ binary "*" Mul, binary "/" Div ]                    -- Precedence 6 (highest)
   , [ binary "+" Add, binary "-" Sub ]                    -- Precedence 5
   , [ binary "<" Lt, binary ">" Gt
-    , binary "<=" Lte, binary ">=" Gte ]                  -- Precedence 4
+    , binary "<=" Le, binary ">=" Ge ]                    -- Precedence 4
   , [ binary "==" Eq, binary "!=" Neq ]                   -- Precedence 3
   , [ binary "&&" And ]                                    -- Precedence 2
   , [ binary "||" Or ]                                     -- Precedence 1 (lowest)
   ]
 
 -- Binary operator helper
-binary :: String -> BinOp -> Operator Parser Expr
+binary :: String -> Op -> Operator Parser Expr
 binary name op = InfixL (BinOp op <$ symbol name)
 
 -- Term (atomic expression)
+-- Note: Simplified pseudocode. Actual implementation uses BoolLit, NumLit, FloatLit
+-- constructors with Located wrappers for source position tracking.
 term :: Parser Expr
 term = parens expr
-   <|> Lit <$> literal
+   <|> literal              -- Parses to BoolLit/NumLit/FloatLit (Located)
    <|> try functionCall
-   <|> Var <$> identifier
+   <|> identifier           -- Parses to Var (Located String)
 ```
 
 **Key Points:**
@@ -214,7 +216,7 @@ varDeclaration = do
   varName <- identifier
   value <- optional (symbol "=" >> expr)
   optional (symbol ";")
-  return $ VarDecl varType varName value
+  return $ Decl varType varName value
 
 -- Assignment
 assignment :: Parser Statement
@@ -260,7 +262,10 @@ paramList = param `sepBy` symbol ","
 
 -- Type parser
 typeParser :: Parser Type
-typeParser = (TInt <$ keyword "int") <|> (TBool <$ keyword "bool")
+typeParser = (TypeInt <$ keyword "int")
+         <|> (TypeFloat <$ keyword "float")
+         <|> (TypeBool <$ keyword "bool")
+         <|> (TypeVoid <$ keyword "void")
 
 -- Program (list of functions)
 program :: Parser Program
@@ -306,48 +311,103 @@ data FuncDef = FuncDef
 
 ```haskell
 data Statement
-  = VarDecl Type String (Maybe Expr)  -- int x = 5;
+  = Decl Type String (Maybe Expr)      -- int x = 5;
   | Assign String Expr                 -- x = 10;
   | If Expr [Statement] (Maybe [Statement])  -- if (...) {...} else {...}
   | While Expr [Statement]             -- while (...) {...}
+  | For (Maybe Statement)              -- for (init; cond; incr) {...}
+        (Maybe Expr)
+        (Maybe Statement)
+        [Statement]
   | Return Expr                        -- return x;
   | ExprStmt Expr                      -- functionCall();
 ```
+
+**For Loop Structure:**
+- First `Maybe Statement`: Optional initialization (declaration or assignment)
+- `Maybe Expr`: Optional condition expression
+- Second `Maybe Statement`: Optional increment statement
+- `[Statement]`: Loop body
 
 ### Expression Nodes
 
 ```haskell
 data Expr
-  = Lit Literal                        -- 42, true
-  | Var String                         -- x
-  | Call String [Expr]                 -- foo(a, b)
-  | BinOp BinOp Expr Expr              -- a + b
+  = BoolLit (Located Bool)             -- true, false (with source position)
+  | NumLit (Located Int)               -- 42, -10 (with source position)
+  | FloatLit (Located Double)          -- 3.14, -0.5 (with source position)
+  | Var (Located String)               -- x (with source position)
+  | BinOp Op (Located Expr) (Located Expr)  -- a + b
+  | UnOp UnOp (Located Expr)           -- -x, !flag
+  | Call (Located String) [Expr]       -- foo(a, b)
 ```
+
+**Note:** All expressions are wrapped with `Located` to track source positions for better error messages.
 
 ### Binary Operators
 
 ```haskell
-data BinOp
+data Op
   = Add | Sub | Mul | Div              -- Arithmetic
-  | Eq | Neq | Lt | Gt | Lte | Gte     -- Comparison
+  | Eq | Neq | Lt | Gt | Le | Ge       -- Comparison
   | And | Or                           -- Logical
+```
+
+### Unary Operators
+
+```haskell
+data UnOp
+  = Neg                                -- Negation: -x
+  | Not                                -- Logical NOT: !x
 ```
 
 ### Literals
 
-```haskell
-data Literal
-  = IntLit Int64                       -- 42
-  | BoolLit Bool                       -- true, false
-```
+Literals are now represented directly in expression nodes rather than a separate `Literal` type:
+
+- `NumLit (Located Int)`: Integer literals like `42`, `-10`
+- `FloatLit (Located Double)`: Floating-point literals like `3.14`, `-0.5`
+- `BoolLit (Located Bool)`: Boolean literals `true`, `false`
 
 ### Types
 
 ```haskell
 data Type
-  = TInt                               -- int
-  | TBool                              -- bool
+  = TypeInt                            -- int
+  | TypeFloat                          -- float
+  | TypeBool                           -- bool
+  | TypeVoid                           -- void
+  | TypeInfer                          -- Internal use only
 ```
+
+**Note:** `TypeInfer` is used internally by the compiler for type inference and should not appear in parsed AST.
+
+### Located Wrapper
+
+All AST nodes that require error reporting are wrapped with source position information:
+
+```haskell
+data Located a = Located
+  { pos :: SourcePos                   -- Source file position
+  , value :: a                         -- Actual value
+  }
+
+data SourcePos = SourcePos
+  { sourceName :: String               -- File name
+  , sourceLine :: Int                  -- Line number
+  , sourceColumn :: Int                -- Column number
+  }
+```
+
+**Purpose:** The `Located` wrapper enables precise error messages by tracking where each construct appears in the source code.
+
+**Example Error Message:**
+```
+Type error at line 10, column 5:
+  Variable 'x' used before initialization
+```
+
+Without `Located`, the compiler could only report "Variable 'x' used before initialization" without indicating where in the code this occurred.
 
 ## Error Handling
 
@@ -409,8 +469,8 @@ int add(int a, int b) {
 Program
   [ FuncDef
       { funcName = "add"
-      , funcReturnType = TInt
-      , funcParams = [("a", TInt), ("b", TInt)]
+      , funcReturnType = TypeInt
+      , funcParams = [("a", TypeInt), ("b", TypeInt)]
       , funcBody =
           [ Return
               (BinOp Add
@@ -426,33 +486,38 @@ Program
 
 ### Semicolon Flexibility
 
-GLaDOS makes semicolons **optional** in most contexts:
+GLaDOS makes semicolons **optional** after statements:
 
 ```haskell
-optional (symbol ";")
+optionalSemi :: Parser ()
+optionalSemi = optional semi >> return ()
 ```
 
 This allows both styles:
 
 ```c
-// With semicolons
 int x = 5;
 return x;
 
-// Without semicolons
 int x = 5
 return x
 ```
+
+**Exception:** Semicolons are **required** in for loop syntax to separate the clauses:
+
+```haskell
+void semi
+```
+
+The for loop parser uses `void semi` (not `optionalSemi`) for the clause separators, making them mandatory.
 
 ### Expression Precedence
 
 The operator table ensures correct precedence:
 
 ```c
-// Parsed as: 2 + (3 * 4)
 int x = 2 + 3 * 4;
 
-// Parsed as: (5 > 3) && (10 < 20)
 bool b = 5 > 3 && 10 < 20;
 ```
 
@@ -479,14 +544,6 @@ int factorial(int n) {
 ```
 
 ## Parser Limitations
-
-### No Forward Declarations
-
-Functions must be defined before being called. The type checker resolves this by building a global environment first.
-
-### No Mutual Recursion
-
-Direct mutual recursion is not supported (but can be achieved through careful ordering).
 
 ### Limited Error Recovery
 

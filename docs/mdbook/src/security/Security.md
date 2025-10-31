@@ -1,4 +1,4 @@
-# GLaDOS Security Features
+# Security Review
 
 > A statically-typed, compiled language with compile-time safety guarantees and runtime protections
 
@@ -208,6 +208,20 @@ We deliberately chose a practical middle ground:
 - **What we have**: Strong static types with inference
 - **What we don't**: Full dependent types or theorem proving
 - **Rationale**: Balances safety with usability and compilation speed
+
+---
+
+## Security Model Comparison
+
+| Feature | C | Rust | Our Language |
+|---------|---|------|--------------|
+| Type Safety | Weak, allows casting | Strong with lifetimes | Strong, no unsafe casts |
+| Memory Safety | Manual, error-prone | Borrow checker | No pointers (safe by design) |
+| Initialization | Undefined behavior | Enforced | Compile-time tracked |
+| Null Safety | Null pointers | Option type | No null (no pointers) |
+| Integer Overflow | Silent wraparound | Panic in debug | Silent (same as C) |
+| Division by Zero | Runtime crash | Panic | Compile-time for literals, runtime otherwise |
+| Return Checking | Undefined behavior | Enforced | Compile-time verified |
 
 ---
 

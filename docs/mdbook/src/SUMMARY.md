@@ -21,16 +21,17 @@
 - [Parsing](./compiler/parsing.md)
 - [Type Checking](./compiler/type-checking.md)
 - [IR Generation](./compiler/ir-generation.md)
+- [Linker](./compiler/linker.md)
 - [VM Execution](./compiler/vm-execution.md)
 
 # Development Guide
 
 - [Error Messages](./development/error-messages.md)
+- [Design Decisions](./development/design-decisions.md)
 
 # Security
 
-- [Security Features](./security/features.md)
-- [Language Comparison](./security/comparison.md)
+- [Security](./security/Security.md)
 
 # Team
 
