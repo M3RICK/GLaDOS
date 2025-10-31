@@ -160,15 +160,22 @@ float b = a + 2.0;
 
 ### Type Inference
 
-Variable types must be **explicitly declared** at the user level. GLaDOS does not provide user-facing type inference:
+GLaDOS supports **type inference** using the `var` keyword. Variables declared with `var` must be initialized, and their type is inferred from the initialization expression:
 
 ```c
-var x = 42;
+var x = 42;        // Inferred as int
+var y = 3.14;      // Inferred as float
+var z = true;      // Inferred as bool
 
-int x = 42;
+int x = 42;        // Explicit type declaration (also valid)
 ```
 
-**Note:** While the compiler uses an internal `TypeInfer` type during type checking for intermediate expressions, this is not exposed to user code. All variable declarations must have explicit type annotations.
+**Requirements for `var`:**
+- Must be initialized at declaration (required)
+- Type is inferred from the initialization expression
+- Provides compile-time type safety
+
+**Note:** The compiler uses an internal `TypeInfer` type during type checking for intermediate expressions to enable the `var` keyword functionality.
 
 ## Function Types
 
