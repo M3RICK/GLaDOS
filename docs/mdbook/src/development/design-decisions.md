@@ -20,27 +20,11 @@ Stack is a cross-platform build tool for Haskell projects that provides reproduc
 
 | Criterion | Stack | Cabal | Raw GHC | Our Choice |
 |-----------|-------|-------|---------|------------|
-| **Reproducible Builds** | ✓ LTS snapshots | Partial (with freeze files) | ✗ Manual | **Stack** |
-| **Dependency Management** | ✓ Automatic resolution | ✓ Manual constraints | ✗ None | **Stack** |
-| **Ease of Setup** | ✓ One command | Moderate | Complex | **Stack** |
-| **Project Isolation** | ✓ Separate environments | ✓ With sandboxes | ✗ Global | **Stack** |
+| **Reproducible Builds** | LTS snapshots | Partial (with freeze files) | Manual | **Stack** |
+| **Dependency Management** | Automatic resolution | Manual constraints | None | **Stack** |
+| **Ease of Setup** | One command | Moderate | Complex | **Stack** |
+| **Project Isolation** | Separate environments | With sandboxes | Global | **Stack** |
 | **Learning Curve** | Low | Moderate | High | **Stack** |
-
-**Key Benefits:**
-1. **LTS (Long Term Support) Snapshots**: We use LTS 22.6, which ensures all dependencies work together
-2. **Predictable Builds**: Same LTS = same behavior across team members' machines
-3. **Simple Commands**: `stack build`, `stack test`, `stack run` - intuitive workflow
-4. **Integrated Tools**: Built-in GHC management, testing, benchmarking
-
-**Why Not Cabal?**
-- Cabal is more flexible but requires more configuration
-- Stack's opinionated approach reduces decision fatigue
-- LTS snapshots eliminate "dependency hell"
-
-**Why Not Raw GHC?**
-- No dependency management
-- Manual package installation is error-prone
-- No reproducible builds across machines
 
 **Decision:** Stack provides the best developer experience for a team project with educational goals.
 
@@ -57,50 +41,15 @@ Megaparsec is a modern parser combinator library for Haskell, successor to Parse
 | Criterion | Megaparsec | Parsec | Alex/Happy | Parser Generators | Our Choice |
 |-----------|------------|--------|------------|-------------------|------------|
 | **Error Messages** | Excellent | Good | Poor | Poor | **Megaparsec** |
-| **Composability** | ✓ Combinator-based | ✓ Combinator-based | ✗ Separate tools | ✗ Generated code | **Megaparsec** |
+| **Composability** | Combinator-based | Combinator-based | Separate tools | Generated code | **Megaparsec** |
 | **Learning Curve** | Low | Low | Moderate | High | **Megaparsec** |
 | **Flexibility** | High | High | Low | Low | **Megaparsec** |
-| **Type Safety** | ✓ Strong | ✓ Strong | Moderate | Weak | **Megaparsec** |
+| **Type Safety** | Strong | Strong | Moderate | Weak | **Megaparsec** |
 | **Maintenance** | Active | Legacy | Active | Varies | **Megaparsec** |
 
-**Key Benefits:**
-1. **Parser Combinators**: Build complex parsers from simple ones
-   ```haskell
-   functionDef = do
-     returnType <- typeParser
-     name <- identifier
-     params <- parens paramList
-     body <- braces statementList
-     return $ FuncDef name returnType params body
-   ```
+1. **Built-in Lexer Support**: `Text.Megaparsec.Char.Lexer` handles whitespace and comments automatically
 
-2. **Excellent Error Messages**: Detailed parse errors with source positions
-   ```
-   Parse error at line 5, column 10:
-     unexpected '{'
-     expecting ';', ')', or identifier
-   ```
-
-3. **Built-in Lexer Support**: `Text.Megaparsec.Char.Lexer` handles whitespace and comments automatically
-
-4. **Type-Safe**: Haskell's type system catches parser bugs at compile time
-
-**Why Not Parsec?**
-- Megaparsec is the modern successor with better error messages
-- More active development and community support
-- Better performance on large inputs
-
-**Why Not Alex/Happy?**
-- Separate lexer and parser generators add complexity
-- Less flexible for language experimentation
-- Generated code is harder to understand and debug
-- No composability - can't easily reuse parser components
-
-**Why Not Parser Generators (Yacc, Bison)?**
-- Require learning separate DSL syntax
-- Generated code is opaque
-- Poor error messages by default
-- Doesn't leverage Haskell's type system
+2. **Type-Safe**: Haskell's type system catches parser bugs at compile time
 
 **Decision:** Megaparsec's composability and error messages make it ideal for educational purposes and rapid language iteration.
 
@@ -116,163 +65,214 @@ Hspec is a BDD (Behavior-Driven Development) testing framework for Haskell, insp
 
 | Criterion | Hspec | HUnit | QuickCheck | Tasty | Our Choice |
 |-----------|-------|-------|------------|-------|------------|
-| **Readability** | ✓ Descriptive | Moderate | Low | Moderate | **Hspec** |
-| **BDD Style** | ✓ `describe`/`it` | ✗ Assertions | ✗ Properties | Mixed | **Hspec** |
+| **Readability** | Descriptive | Moderate | Low | Moderate | **Hspec** |
+| **BDD Style** | `describe`/`it` | Assertions | Properties | Mixed | **Hspec** |
 | **Output Formatting** | Excellent | Basic | Basic | Good | **Hspec** |
 | **Learning Curve** | Low | Low | Moderate | Moderate | **Hspec** |
-| **Property Testing** | ✓ Integrates QuickCheck | ✗ | ✓ Native | ✓ | **Hspec** |
-| **Parallel Execution** | ✓ | ✗ | ✗ | ✓ | **Hspec** |
-
-**Key Benefits:**
-1. **Readable Test Structure**:
-   ```haskell
-   describe "Type Checker" $ do
-     it "detects type mismatches" $ do
-       typeCheck "int x = true;" `shouldSatisfy` isLeft
-
-     it "allows correct assignments" $ do
-       typeCheck "int x = 42;" `shouldSatisfy` isRight
-   ```
-
-2. **Descriptive Output**:
-   ```
-   Type Checker
-     ✓ detects type mismatches
-     ✓ allows correct assignments
-     ✓ tracks variable initialization
-     ✗ FAILED: should catch division by zero
-   ```
-
-3. **QuickCheck Integration**: Can combine example-based and property-based testing
-   ```haskell
-   it "type checks are commutative" $ property $
-     \expr1 expr2 -> typeCheck (expr1 + expr2) == typeCheck (expr2 + expr1)
-   ```
-
-**Why Not HUnit?**
-- Less descriptive test output
-- No BDD-style organization
-- Manual test suite assembly
-
-**Why Not Pure QuickCheck?**
-- Better for properties than specific examples
-- Less intuitive for testing specific scenarios
-- Output less readable for specific test cases
-
-**Why Not Tasty?**
-- More flexible but requires more boilerplate
-- Hspec's opinionated approach is simpler for our use case
-- Tasty is great for complex test suites, overkill for us
+| **Property Testing** | Integrates QuickCheck | No | Native | Yes | **Hspec** |
+| **Parallel Execution** | Yes | No | No | Yes | **Hspec** |
 
 **Decision:** Hspec's readability and BDD style make tests self-documenting, which is valuable for an educational project.
 
 ---
 
-## Language Design Choices
+## Core Libraries
 
-### Static Typing Over Dynamic
+### Containers: Data Structures
 
-**Why Static Types?**
-- Catch errors at compile time (fail fast)
-- Self-documenting code (types show intent)
-- Better IDE support (autocomplete, refactoring)
-- Zero runtime overhead for type checks
+#### What is Containers?
 
-**Trade-off:** More verbose than dynamic typing, but worth it for safety
+The `containers` library provides high-performance, immutable data structures for Haskell.
 
-### No Implicit Type Conversions
+#### Why Containers?
 
-**Why Strict Types?**
-```c
-// C allows dangerous conversions
-int x = 3.7;      // Silent truncation
-bool b = 42;      // Non-zero becomes true
+| Criterion | containers | unordered-containers | vector | lists | Our Choice |
+|-----------|------------|---------------------|---------|-------|------------|
+| **Performance** | O(log n) | O(1) average | O(1) index | O(n) | **containers** |
+| **Ordering** | Sorted | Unordered | Indexed | Ordered | **containers** |
+| **Immutability** | Persistent | Persistent | Immutable | Immutable | **containers** |
+| **Memory** | Efficient | Efficient | Very Efficient | Poor | **containers** |
+| **Pattern Matching** | Good | Moderate | Limited | Excellent | **containers** |
 
-// GLaDOS requires explicit types
-int x = 3;        // Must be exact type
-bool b = true;    // No confusion
-```
+**Our Usage:**
+- `Map`: Symbol tables, type environments, function tables
+- `Set`: Tracking initialized variables, imported modules
+- `Seq`: Instruction sequences, statement lists
 
-**Benefits:**
-- No silent data loss
-- No confusion about intent
-- Prevents entire class of bugs
+**Decision:** Containers provides the perfect balance of performance and immutability for compiler data structures.
 
-**Trade-off:** More typing, but eliminates subtle bugs
+---
 
-### Stack-Based VM Over Native Code
+## Binary Data Handling
 
-**Why Bytecode VM?**
+### ByteString: Binary Data Handling
 
-| Criterion | Stack VM | Register VM | Native Code | Our Choice |
-|-----------|----------|-------------|-------------|------------|
-| **Simplicity** | High | Moderate | Low | **Stack VM** |
-| **Portability** | ✓ Perfect | ✓ Perfect | ✗ Per-platform | **Stack VM** |
-| **Performance** | Good | Better | Best | **Stack VM** |
-| **Debug-ability** | ✓ Easy | Moderate | Hard | **Stack VM** |
-| **Implementation** | Simple | Complex | Very Complex | **Stack VM** |
+#### What is ByteString?
+
+Efficient, immutable byte array representation for binary data.
+
+#### Why ByteString?
+
+| Criterion | ByteString | [Word8] | Vector Word8 | Our Choice |
+|-----------|------------|---------|--------------|------------|
+| **Performance** | Excellent | Poor | Excellent | **ByteString** |
+| **Memory** | Packed | Wasteful | Packed | **ByteString** |
+| **I/O** | Optimized | Slow | Manual | **ByteString** |
+| **Binary Integration** | Native | Manual | Manual | **ByteString** |
+| **Ecosystem** | Mature | N/A | Growing | **ByteString** |
 
 **Key Benefits:**
-1. **Simple to Implement**: Push/pop operations are intuitive
-2. **Easy to Debug**: Can trace stack state at each instruction
-3. **Portable**: Same bytecode runs anywhere
-4. **Educational Value**: Clear execution model
 
-**Why Not Native Code?**
-- Requires architecture-specific code generation
-- Complex register allocation
-- Platform-specific debugging
-- Harder to understand for learning
+**Our Usage:**
+- `.glc` bytecode files
+- `.glo` object files
+- Binary serialization/deserialization
+- File I/O operations
 
-**Why Not Register VM?**
-- More complex instruction encoding
-- Register allocation adds complexity
-- Marginal performance gain for our use case
-
-**Decision:** Stack VM provides the best learning experience while maintaining reasonable performance.
+**Decision:** ByteString is the standard, battle-tested solution for binary data in Haskell.
 
 ---
 
-## Project Structure Decisions
+## Evaluation Control: DeepSeq
 
-### Modular Directory Structure
+### What is DeepSeq?
 
-```
-src/
-├── AST/          - Abstract Syntax Tree definitions
-├── Parser/       - Megaparsec parser combinators
-├── Security/     - Type checking and safety analysis
-├── Compiler/     - IR generation and optimization
-├── IR/           - Intermediate representation types
-├── Bytecode/     - Binary serialization
-├── Linker/       - Separate compilation support
-├── VM/           - Virtual machine execution
-└── Error/        - Error types and formatting
-```
+Library for controlling evaluation strictness in lazy Haskell.
 
-**Why This Structure?**
-1. **Clear Separation of Concerns**: Each stage isolated
-2. **Easy to Navigate**: Logical grouping by functionality
-3. **Modular Testing**: Can test each stage independently
-4. **Extensibility**: Easy to add new stages or features
+### Why DeepSeq?
 
-**Alternative Considered:**
-- Flat structure: All files in `src/`
-- **Rejected:** Hard to navigate, unclear dependencies
+| Criterion | DeepSeq | seq | BangPatterns | Our Choice |
+|-----------|---------|-----|--------------|------------|
+| **Deep Evaluation** | Recursive | Shallow | Shallow | **DeepSeq** |
+| **Type Safety** | NFData class | No | No | **DeepSeq** |
+| **Composability** | Derives | Manual | Manual | **DeepSeq** |
+| **Control** | Explicit | Explicit | Implicit | **DeepSeq** |
 
-### Security Module for Type Checking
+**Key Benefits:**
 
-**Why "Security" not "TypeChecker"?**
-- Emphasizes that type safety is a security feature
-- Includes type checking, initialization tracking, and control flow analysis
-- Reflects philosophy: correctness IS security
+**Our Usage:**
+- Force evaluation before writing bytecode
+- Prevent space leaks in compilation
+- Ensure error messages are fully evaluated
+- Accurate benchmarking
 
-**Benefits:**
-- Makes security a first-class concern
-- Encourages thinking about safety implications
-- Aligns with modern secure coding practices
+**Decision:** DeepSeq prevents space leaks and ensures predictable memory behavior in our compiler.
 
 ---
+
+## Testing Infrastructure
+
+### Hspec-Discover: Automatic Test Discovery
+
+#### What is Hspec-Discover?
+
+Automatic test discovery tool for Hspec - finds all test files and generates test suite automatically.
+
+#### Why Hspec-Discover?
+
+| Criterion | hspec-discover | Manual main | Tasty-discover | Our Choice |
+|-----------|----------------|-------------|----------------|------------|
+| **Automation** | Fully automatic | Manual | Automatic | **hspec-discover** |
+| **Convention** | `*Spec.hs` files | Custom | Custom | **hspec-discover** |
+| **Maintenance** | Zero | High | Low | **hspec-discover** |
+| **Integration** | Native Hspec | N/A | Different API | **hspec-discover** |
+
+**Key Benefits:**
+
+**Decision:** Hspec-discover eliminates boilerplate and ensures we never forget to run a test.
+
+---
+
+### Process: External Program Execution
+
+#### What is Process?
+
+Library for creating and interacting with system processes.
+
+#### Why Process?
+
+| Criterion | process | System.Cmd | ShellCmd | Raw fork | Our Choice |
+|-----------|---------|------------|----------|----------|------------|
+| **Type Safety** | Strong | Weak | Moderate | Unsafe | **process** |
+| **Error Handling** | Explicit | Weak | Moderate | Manual | **process** |
+| **Portability** | Cross-platform | Limited | Limited | Unix only | **process** |
+| **Control** | High | Low | Moderate | Total | **process** |
+| **Output Capture** | Easy | Manual | Easy | Manual | **process** |
+
+**Our Usage:**
+- Run compiled programs in tests
+- Test linker by calling glados-exe
+- Integration tests for full pipeline
+- Verify error messages from command-line tool
+
+**Decision:** Process provides safe, portable process execution for comprehensive integration testing.
+
+---
+
+### QuickCheck: Property-Based Testing
+
+#### What is QuickCheck?
+
+Property-based testing library that generates random test cases to verify properties.
+
+#### Why QuickCheck?
+
+| Criterion | QuickCheck | Example-Based | SmallCheck | Hedgehog | Our Choice |
+|-----------|------------|---------------|------------|----------|------------|
+| **Coverage** | Excellent | Manual | Complete (small) | Excellent | **QuickCheck** |
+| **Random Testing** | Yes | No | Exhaustive | Yes | **QuickCheck** |
+| **Shrinking** | Automatic | N/A | N/A | Better | **QuickCheck** |
+| **Integration** | Hspec native | Yes | Yes | Manual | **QuickCheck** |
+| **Maturity** | Very mature | N/A | Mature | Newer | **QuickCheck** |
+
+**Our Usage:**
+- Test compiler properties (type preservation)
+- Verify VM correctness (semantics preservation)
+- Test parser round-tripping (parse . pretty = id)
+- Find edge cases in type checker
+
+**Decision:** QuickCheck finds bugs that example-based tests miss, and integrates perfectly with our Hspec test suite.
+
+---
+
+## Parser Combinators
+
+### Parser-Combinators: Megaparsec Utilities
+
+#### What is Parser-Combinators?
+
+Companion library to Megaparsec providing lightweight, general parser combinators.
+
+#### Why Parser-Combinators?
+
+**Key Benefits:**
+
+1. **Separation of Concerns**:
+   - Megaparsec: Core parsing functionality
+   - Parser-combinators: Reusable combinators
+   - Keeps Megaparsec lightweight
+
+2. **Useful Combinators**:
+   ```haskell
+   import Control.Monad.Combinators
+
+   -- Many with separator
+   paramList = param `sepBy` comma
+
+   -- Between delimiters
+   block = between (symbol "{") (symbol "}") statements
+
+   -- Optional with default
+   optionalSemicolon = option () semicolon
+   ```
+
+**Our Usage:**
+- `sepBy`, `sepBy1`: Comma-separated lists
+- `between`: Parentheses, braces, brackets
+- `choice`: Multiple alternatives
+- `option`: Optional syntax elements
+
+**Decision:** Parser-combinators provides standard combinators that keep our parser code clean and readable.
 
 ## Binary Serialization: Binary Library
 
@@ -283,20 +283,7 @@ src/
 | **Simplicity** | High | High | Moderate | Low | **Binary** |
 | **Performance** | Good | Good | Better | Varies | **Binary** |
 | **Ecosystem** | Mature | Mature | Newer | N/A | **Binary** |
-| **Type Safety** | ✓ Derive instances | ✓ Derive instances | ✓ Derive instances | Manual | **Binary** |
-
-**Key Benefits:**
-1. **Automatic Derivation**:
-   ```haskell
-   data Instruction = PushInt Int | AddInt | ...
-     deriving (Generic, Binary)
-   ```
-
-2. **Type-Safe**: Compiler ensures correct serialization
-
-3. **Lazy Evaluation**: Efficient for large files
-
-4. **Standard Format**: Well-understood binary encoding
+| **Type Safety** | Derive instances | Derive instances | Derive instances | Manual | **Binary** |
 
 **Decision:** Binary provides the simplest solution with good performance and ecosystem support.
 
@@ -333,7 +320,7 @@ compile :: Program -> Either CompilerError IRProgram
 ### Branch Strategy
 - `main`: Stable releases
 - `dev`: Development branch (we use this as our main working branch)
-- Feature branches: For experimental features
+- `dev_(feature)`Feature branches: For experimental features
 
 **Why This Structure?**
 - Clear separation between stable and development
@@ -342,22 +329,146 @@ compile :: Program -> Either CompilerError IRProgram
 
 ---
 
-## Future Considerations
+## Compiler Configuration
 
-### What We Might Change:
+### GHC Warning Flags
 
-1. **Native Code Backend**: LLVM integration for performance
-2. **Incremental Compilation**: Cache compiled modules
-3. **Language Server Protocol**: IDE integration
-4. **Optimizer**: Constant folding, dead code elimination
+We enable extensive warning flags to catch bugs early and maintain code quality.
 
-### What We'll Keep:
+#### Enabled Warnings
 
-1. **Stack**: Excellent developer experience
-2. **Megaparsec**: Flexibility and error messages
-3. **Hspec**: Readable tests
-4. **Static Types**: Safety guarantees
+```yaml
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+```
 
+#### Why Each Warning?
+
+**-Wall (Enable All Standard Warnings)**
+- Catches unused variables, imports, and patterns
+- Detects type defaulting and orphan instances
+- Essential baseline for code quality
+
+**-Wcompat (Future Compatibility)**
+- Warns about upcoming breaking changes
+- Helps with GHC version migration
+- Prevents reliance on deprecated features
+
+**-Wincomplete-record-updates**
+```haskell
+updateName record = record { name = "new" }
+
+-- GOOD: Pattern match ensures field exists
+updateName record@Record{..} = record { name = "new" }
+```
+
+**-Wincomplete-uni-patterns**
+```haskell
+-- BAD: Pattern match can fail
+let Just x = maybeValue in x + 1
+
+-- GOOD: Exhaustive pattern match
+case maybeValue of
+  Just x -> x + 1
+  Nothing -> 0
+```
+
+**-Wmissing-export-lists**
+```haskell
+-- BAD: Everything exported
+module Parser where
+
+-- GOOD: Explicit exports
+module Parser (parseProgram, ParseError) where
+```
+- Prevents accidental API exposure
+- Makes module interface explicit
+- Helps maintain encapsulation
+
+**-Wpartial-fields**
+```haskell
+-- BAD: Partial record
+data Point = Point2D { getX :: Int, getY :: Int }
+           | Point3D { getX :: Int, getZ :: Int }
+
+-- GOOD: Total fields
+data Point = Point2D Int Int | Point3D Int Int Int
+```
+
+**-Wredundant-constraints**
+```haskell
+-- BAD: Ord not needed
+sort :: (Ord a, Show a) => [a] -> [a]
+
+-- GOOD: Only necessary constraints
+sort :: Ord a => [a] -> [a]
+```
+
+#### Runtime Options
+
+```yaml
+ghc-options:
+  - -threaded
+  - -rtsopts
+  - -with-rtsopts=-N
+```
+
+**Decision:** Strict warnings catch bugs at compile time, and runtime options enable performance optimization without code changes.
+
+---
+
+## Base Library and Language Extensions
+
+### Base: Haskell Standard Library
+
+**Version Constraint:** `base >= 4.7 && < 5`
+
+**Decision:** Base library is required for any Haskell program; our constraint ensures stability while allowing modern GHC features.
+
+---
+
+## Library Summary
+
+### Complete Dependency List
+
+Here's a quick reference of all libraries used in GLaDOS:
+
+| Library | Purpose | Why Not Alternative? |
+|---------|---------|---------------------|
+| **base** | Standard library | Required foundation |
+| **megaparsec** | Parser combinators | Better errors than Parsec, more flexible than generators |
+| **parser-combinators** | Parser utilities | Standard combinators for megaparsec |
+| **containers** | Map, Set, Seq | Deterministic ordering, efficient immutable operations |
+| **bytestring** | Binary data | Standard for binary I/O |
+| **binary** | Serialization | Simple automatic derivation |
+| **deepseq** | Force evaluation | Prevents space leaks |
+| **hspec** | BDD testing | Readable test output |
+| **hspec-discover** | Test discovery | Zero-maintenance test suite |
+| **QuickCheck** | Property testing | Finds edge cases automatically |
+| **process** | External programs | End-to-end integration tests |
+
+### Dependency Graph
+
+```
+Application Layer:
+├── Parser (megaparsec, parser-combinators)
+├── Type Checker (containers)
+├── Compiler (containers, bytestring)
+├── VM (bytestring, binary, deepseq)
+└── Tests (hspec, hspec-discover, QuickCheck, process)
+
+Infrastructure:
+├── Build System (Stack)
+└── Compiler (GHC with strict warnings)
+```
 ---
 
 ## Conclusion
@@ -367,5 +478,3 @@ Our technology choices prioritize:
 2. **Safety**: Type safety and error handling
 3. **Productivity**: Good tooling and quick iteration
 4. **Maintainability**: Modular structure and clear code
-
-These decisions have served us well, providing a solid foundation for a safe, educational programming language implementation. While we could optimize for raw performance or minimalism, our choices reflect the project's goals: building a safe, understandable compiler that demonstrates modern language implementation techniques.
