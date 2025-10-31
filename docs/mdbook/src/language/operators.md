@@ -406,11 +406,18 @@ bool d = (5 > 3) && (10 < 20);
 bool e = (x > 0) && (x < 100);
 ```
 
-**Short-Circuit Evaluation:**
-GLaDOS uses short-circuit evaluation: if the left operand is `false`, the right operand is not evaluated.
+**Note on Evaluation:**
+GLaDOS uses **eager evaluation** for logical operators. Both operands are always evaluated before the operation is performed. This means:
 
 ```c
-bool safe = (b != 0) && (a / b > 5);
+// NOT safe in GLaDOS - both sides are evaluated
+bool result = (b != 0) && (a / b > 5);  // Will evaluate a/b even if b==0
+
+// Safe alternative - use nested if statements
+bool result = false;
+if (b != 0) {
+    result = (a / b > 5);
+}
 ```
 
 ### Logical OR (`||`)
@@ -437,8 +444,8 @@ bool c = false || false;
 bool d = (x < 0) || (x > 100);
 ```
 
-**Short-Circuit Evaluation:**
-If the left operand is `true`, the right operand is not evaluated.
+**Note on Evaluation:**
+Like `&&`, the `||` operator uses **eager evaluation**. Both operands are always evaluated before the operation is performed.
 
 ## Operator Precedence
 

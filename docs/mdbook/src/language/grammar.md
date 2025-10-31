@@ -2,6 +2,8 @@
 
 This is the formal grammar specification for GLaDOS in Backus-Naur Form (BNF).
 
+> ε veut dire string vide Emily 👍
+
 ## Program Structure
 
 ```bnf

@@ -150,12 +150,14 @@ x = x + 1;
 
 ## Types
 
-GLaDOS supports two primitive types:
+GLaDOS supports four primitive types:
 
 | Type | Description | Examples |
 |------|-------------|----------|
 | `int` | 64-bit signed integer | `0`, `42`, `-10`, `1000` |
+| `float` | 64-bit double-precision floating-point | `3.14`, `-0.5`, `1.0`, `2.5e10` |
 | `bool` | Boolean value | `true`, `false` |
+| `void` | No return value (functions only) | N/A |
 
 ### Type Safety
 
@@ -447,33 +449,4 @@ int main() {
     print(42);
     return 0;
 }
-```
-
-## Best Practices
-
-1. **Always initialize variables** before use
-2. **Use meaningful names** for functions and variables
-3. **Keep functions small** and focused
-4. **Add comments** to explain complex logic
-5. **Handle all return paths** in non-void functions
-6. **Use proper indentation** (4 spaces recommended)
-
-## Common Mistakes
-
-```c
-int x;
-return x;
-
-int getValue() {
-    return true;
-}
-
-int bad(int x) {
-    if (x > 0) {
-        return 1;
-    }
-}
-
-int add(int a, int b) { return a + b; }
-int x = add(5);
 ```
