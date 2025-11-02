@@ -143,6 +143,36 @@ stack test --coverage
 
 ---
 
+## Bonus Modules
+
+### `Pointer.hs` - Security Checker
+
+Prevents unsafe pointer-like operations (e.g. `*`, `&`, `ptr`, `ref`) in user code.
+If detected, it raises:  
+`SecurityError: pointer manipulation is not allowed in glados.`
+
+```haskell
+> checkPointers "(define x 42)"
+Right ()
+> checkPointers "(define ptrX (* &x))"
+Left "SecurityError..."
+```
+
+### `Outputs.hs` - Output Manager
+
+Handles all program outputs:  
+- `Print` → standard output (`stdout`)  
+- `Printerror` → error output (`stderr`)  
+- `Return` → return value of the program
+
+```haskell
+exec [ Print (VInt 42)
+     , Printerror (VString "Erreur !")
+     , Return (VBool True) ]
+```
+
+---
+
 ## For Everything Else
 
 **RTFM:** [Full Documentation](https://crackedontiti.github.io/Glados_Documentation/)
